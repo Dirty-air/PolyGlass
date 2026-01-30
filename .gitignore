@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# skills
+.claude/skills/
+.codex/skills/
+.cursor/skills/
+.agents/skills/
+
 # database
 /data/app.db
 
