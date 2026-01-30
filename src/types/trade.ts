@@ -23,6 +23,7 @@ export interface RawLog {
     makerAmount: bigint;
     takerAmount: bigint;
     fee: bigint;
+    originFrom?: string;  // 真实 EOA（交易发起者）
   }
   
   /** 归类后的交易（含市场和价格信息） */
@@ -52,6 +53,7 @@ export interface RawLog {
     outcome: string | null;
     direction: string;
     price: number | null;
+    origin_from: string | null;  // 真实 EOA
     market_title?: string;
   }
   

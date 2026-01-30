@@ -8,9 +8,9 @@ const INSERT_SQL = `
   INSERT OR IGNORE INTO trades
   (tx_hash, log_index, block_number, maker, taker,
    maker_asset_id, taker_asset_id, maker_amount, taker_amount,
-   fee, token_id, market_id, outcome, direction, price)
+   fee, token_id, market_id, outcome, direction, price, origin_from)
   VALUES
-  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 /**
@@ -23,6 +23,8 @@ export function saveTrades(trades: ResolvedTrade[]): number {
   const tx = db.transaction(() => {
     let count = 0;
     for (const t of trades) {
+      // originFrom fallback 到 maker
+      const originFrom = t.originFrom ?? t.maker.toLowerCase();
       const result = stmt.run(
         t.txHash,
         t.logIndex,
@@ -38,7 +40,8 @@ export function saveTrades(trades: ResolvedTrade[]): number {
         t.marketId,
         t.outcome,
         t.direction,
-        t.price
+        t.price,
+        originFrom
       );
       if (result.changes > 0) count++;
     }

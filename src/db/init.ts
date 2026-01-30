@@ -51,6 +51,7 @@ export function getDb(): Database.Database {
       outcome TEXT,
       direction TEXT NOT NULL,
       price REAL,
+      origin_from TEXT,
       UNIQUE(tx_hash, log_index)
     );
 
@@ -66,6 +67,7 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_trades_maker ON trades(maker);
     CREATE INDEX IF NOT EXISTS idx_trades_taker ON trades(taker);
     CREATE INDEX IF NOT EXISTS idx_trades_block ON trades(block_number);
+    CREATE INDEX IF NOT EXISTS idx_trades_origin ON trades(origin_from);
 
     CREATE TABLE IF NOT EXISTS events (
       id TEXT PRIMARY KEY,

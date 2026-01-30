@@ -6,6 +6,10 @@
  * - direction=BUY: maker 提供 outcome tokens, taker 提供 USDC
  * - direction=SELL: taker 提供 outcome tokens, maker 提供 USDC
  *
+ * 地址策略：
+ * - 优先使用 origin_from（真实 EOA）
+ * - fallback 到 maker/taker
+ *
  * 精度：
  * - USDC: 6 位小数 (10^6)
  * - Outcome Token: 6 位小数（Polymarket CTF 实际也是 10^6）
@@ -17,8 +21,8 @@ const USDC_DECIMALS = 1e6;
 const TOKEN_DECIMALS = 1e6;
 
 /**
- * 将一条 trade 标准化为一或两条 fill
- * maker 和 taker 各产生一条（方向相反）
+ * 将一条 trade 标准化为 fill（基于 originFrom EOA 视角）
+ * 只生成一条 fill 记录（真实交易发起者视角）
  */
 export function normalizeTradeToFills(trade: TradeRow): Fill[] {
   if (!trade.market_id || !trade.outcome) return [];
@@ -26,78 +30,50 @@ export function normalizeTradeToFills(trade: TradeRow): Fill[] {
   const makerAmount = Number(trade.maker_amount);
   const takerAmount = Number(trade.taker_amount);
   const outcomeSide = trade.outcome as "YES" | "NO";
-  const fills: Fill[] = [];
+
+  // 使用 originFrom（真实 EOA），fallback 到 maker
+  const originAddress = (trade.origin_from ?? trade.maker).toLowerCase();
 
   if (trade.direction === "BUY") {
-    // maker 提供 outcome tokens, taker 提供 USDC
-    // maker = 卖方, taker = 买方
+    // taker 买入 outcome tokens
     const shares = makerAmount / TOKEN_DECIMALS;
     const cash = takerAmount / USDC_DECIMALS;
 
-    // Maker: 卖出 shares, 收入 USDC
-    fills.push({
-      address: trade.maker.toLowerCase(),
-      marketId: trade.market_id,
-      outcomeSide,
-      sharesDelta: -shares,
-      cashDeltaUSDC: cash,
-      price: trade.price ?? cash / shares,
-      timestamp: trade.block_number,
-      txHash: trade.tx_hash,
-      logIndex: trade.log_index,
-      role: "maker",
-    });
-
-    // Taker: 买入 shares, 支出 USDC
-    fills.push({
-      address: trade.taker.toLowerCase(),
-      marketId: trade.market_id,
-      outcomeSide,
-      sharesDelta: shares,
-      cashDeltaUSDC: -cash,
-      price: trade.price ?? cash / shares,
-      timestamp: trade.block_number,
-      txHash: trade.tx_hash,
-      logIndex: trade.log_index,
-      role: "taker",
-    });
+    return [
+      {
+        address: originAddress,
+        marketId: trade.market_id,
+        outcomeSide,
+        sharesDelta: shares,
+        cashDeltaUSDC: -cash,
+        price: trade.price ?? cash / shares,
+        timestamp: trade.block_number,
+        txHash: trade.tx_hash,
+        logIndex: trade.log_index,
+        role: "taker",
+      },
+    ];
   } else {
     // direction === "SELL"
-    // taker 提供 outcome tokens, maker 提供 USDC
-    // taker = 卖方, maker = 买方
+    // taker 卖出 outcome tokens
     const shares = takerAmount / TOKEN_DECIMALS;
     const cash = makerAmount / USDC_DECIMALS;
 
-    // Maker: 买入 shares, 支出 USDC
-    fills.push({
-      address: trade.maker.toLowerCase(),
-      marketId: trade.market_id,
-      outcomeSide,
-      sharesDelta: shares,
-      cashDeltaUSDC: -cash,
-      price: trade.price ?? cash / shares,
-      timestamp: trade.block_number,
-      txHash: trade.tx_hash,
-      logIndex: trade.log_index,
-      role: "maker",
-    });
-
-    // Taker: 卖出 shares, 收入 USDC
-    fills.push({
-      address: trade.taker.toLowerCase(),
-      marketId: trade.market_id,
-      outcomeSide,
-      sharesDelta: -shares,
-      cashDeltaUSDC: cash,
-      price: trade.price ?? cash / shares,
-      timestamp: trade.block_number,
-      txHash: trade.tx_hash,
-      logIndex: trade.log_index,
-      role: "taker",
-    });
+    return [
+      {
+        address: originAddress,
+        marketId: trade.market_id,
+        outcomeSide,
+        sharesDelta: -shares,
+        cashDeltaUSDC: cash,
+        price: trade.price ?? cash / shares,
+        timestamp: trade.block_number,
+        txHash: trade.tx_hash,
+        logIndex: trade.log_index,
+        role: "taker",
+      },
+    ];
   }
-
-  return fills;
 }
 
 /**

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       blockNumber: t.block_number,
       maker: t.maker,
       taker: t.taker,
+      originFrom: t.origin_from,
       tokenId: t.token_id,
       marketId: t.market_id,
       marketTitle: t.market_title || null,

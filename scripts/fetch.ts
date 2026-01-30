@@ -23,7 +23,7 @@ function loadEnv() {
 loadEnv();
 
 import { fetchMarketsWithFallback } from "../src/markets";
-import { scanUntilEnough } from "../src/indexer";
+import { scanUntilEnough, enrichOriginFrom } from "../src/indexer";
 import { decodeLogs } from "../src/decoder";
 import { resolveTrades } from "../src/resolver";
 import { saveMarkets, saveTrades, saveEvents, saveMarketEvents } from "../src/db";
@@ -35,7 +35,7 @@ async function main() {
   logger.info("=== Polymarket Data Fetch Pipeline ===");
 
   // Step 1: 拉取市场数据
-  logger.info("[1/5] Fetching markets from Gamma API...");
+  logger.info("[1/6] Fetching markets from Gamma API...");
   const { markets, events, marketEvents, tokenMap } = await fetchMarketsWithFallback();
   const savedMarkets = saveMarkets(markets);
   logger.info(`Saved ${savedMarkets} markets`);
@@ -48,22 +48,27 @@ async function main() {
   }
 
   // Step 2: 扫描链上日志
-  logger.info("[2/5] Scanning OrderFilled logs from Polygon...");
+  logger.info("[2/6] Scanning OrderFilled logs from Polygon...");
   const logs = await scanUntilEnough();
   logger.info(`Found ${logs.length} raw logs`);
 
   // Step 3: 解码事件
-  logger.info("[3/5] Decoding logs...");
+  logger.info("[3/6] Decoding logs...");
   const { trades: decoded, errors } = decodeLogs(logs);
   logger.info(`Decoded ${decoded.length} trades (${errors.length} errors)`);
 
-  // Step 4: 归类市场
-  logger.info("[4/5] Resolving markets...");
-  const { resolved, unresolved } = resolveTrades(decoded, tokenMap);
+  // Step 4: 获取 originFrom（真实 EOA）
+  logger.info("[4/6] Enriching originFrom...");
+  const enriched = await enrichOriginFrom(decoded);
+  logger.info(`Enriched ${enriched.length} trades with originFrom`);
+
+  // Step 5: 归类市场
+  logger.info("[5/6] Resolving markets...");
+  const { resolved, unresolved } = resolveTrades(enriched, tokenMap);
   logger.info(`Resolved ${resolved.length}, unresolved ${unresolved.length}`);
 
-  // Step 5: 存入数据库
-  logger.info("[5/5] Saving to database...");
+  // Step 6: 存入数据库
+  logger.info("[6/6] Saving to database...");
   const savedTrades = saveTrades(resolved);
   logger.info(`Saved ${savedTrades} new trades`);
 

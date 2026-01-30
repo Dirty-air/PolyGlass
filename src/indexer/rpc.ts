@@ -93,3 +93,20 @@ export async function getLogs(params: {
     data: log.data,
   }));
 }
+
+/**
+ * 获取交易详情（用于提取 tx.from）
+ */
+export async function getTransactionByHash(
+  txHash: string
+): Promise<{ from: string } | null> {
+  try {
+    const res = (await rpcCallWithRetry("eth_getTransactionByHash", [txHash])) as {
+      from: string;
+    } | null;
+    if (!res) return null;
+    return { from: res.from };
+  } catch {
+    return null;
+  }
+}
