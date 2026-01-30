@@ -1,6 +1,6 @@
 export { getDb } from "./init";
 export { saveTrades, getTrades, getTradeCount } from "./trades";
-export { saveMarkets, getMarkets, getMarketsWithStats } from "./markets";
+export { saveMarkets, getMarkets, getMarketsWithStats, type StoredMarket } from "./markets";
 export { addTag, getTags, getTagsForAddresses } from "./tags";
 export { getTraderStats } from "./traders";
 export {

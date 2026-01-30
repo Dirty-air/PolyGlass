@@ -4,6 +4,15 @@
 import { getDb } from "./init";
 import type { Market } from "@/types/market";
 
+/** 数据库存储的市场基础信息 */
+export interface StoredMarket {
+  marketId: string;
+  title: string;
+  conditionId: string;
+  tokenYes: string;
+  tokenNo: string;
+}
+
 const INSERT_SQL = `
   INSERT OR REPLACE INTO markets
   (id, title, condition_id, token_yes, token_no)
@@ -30,7 +39,7 @@ export function saveMarkets(markets: Market[]): number {
 /**
  * 获取所有市场
  */
-export function getMarkets(): Market[] {
+export function getMarkets(): StoredMarket[] {
   const db = getDb();
   const rows = db.prepare("SELECT * FROM markets").all() as Array<{
     id: string;
