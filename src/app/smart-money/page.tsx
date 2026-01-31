@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { TrendingUp, Users, Trophy, Wallet } from "lucide-react";
 import { Header } from "../components/header";
@@ -43,7 +43,8 @@ function formatUsd(n: number): string {
   return `${sign}$${abs.toFixed(0)}`;
 }
 
-export default function SmartMoneyPage() {
+/** 内部组件：使用 useSearchParams */
+function SmartMoneyContent() {
   const searchParams = useSearchParams();
   const [view, setView] = useState<"all" | "retail">("retail");
   const { data, loading, error } = useSmartMoney({ limit: 100, view });
@@ -66,10 +67,7 @@ export default function SmartMoneyPage() {
   } : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-6 py-8 lg:px-10">
-      {/* Header 导航 */}
-      <Header />
-
+    <>
       {/* 页面标题和视图切换 */}
       <div className="flex items-center justify-between">
         <div>
@@ -159,6 +157,21 @@ export default function SmartMoneyPage() {
 
       {/* Trader Detail Drawer */}
       <TraderDrawer address={selectedAddress} onClose={() => setSelectedAddress(null)} />
+    </>
+  );
+}
+
+export default function SmartMoneyPage() {
+  return (
+    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-6 py-8 lg:px-10">
+      <Header />
+      <Suspense fallback={
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
+        </div>
+      }>
+        <SmartMoneyContent />
+      </Suspense>
     </main>
   );
 }
