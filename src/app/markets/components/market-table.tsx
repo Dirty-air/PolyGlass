@@ -27,11 +27,21 @@ function SortIcon({ field, currentField, direction }: { field: SortField; curren
 export function MarketTable({ markets, events, marketEvents }: MarketTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"active" | "all">("active");
+  const [tagFilter, setTagFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("volume");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+
+  // 收集所有标签（从 markets 的 tags 提取）
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    markets.forEach(m => {
+      m.tags?.forEach(t => tagSet.add(t));
+    });
+    return ["all", ...Array.from(tagSet).sort()];
+  }, [markets]);
 
   // 按 Event 分组 Markets
   const eventGroups = useMemo(() => {
@@ -85,6 +95,13 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
       result = result.filter((g) => !g.event.endDate || new Date(g.event.endDate) > now);
     }
 
+    // 标签筛选（检查 group 中的 markets 是否有匹配的 tag）
+    if (tagFilter !== "all") {
+      result = result.filter((g) =>
+        g.markets.some(m => m.tags?.includes(tagFilter))
+      );
+    }
+
     result.sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
@@ -97,7 +114,7 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
     });
 
     return result;
-  }, [eventGroups, search, statusFilter, sortField, sortDirection]);
+  }, [eventGroups, search, statusFilter, tagFilter, sortField, sortDirection]);
 
   const totalPages = Math.ceil(filteredGroups.length / rowsPerPage);
   const paginatedGroups = useMemo(() => {
@@ -151,10 +168,21 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value as "active" | "all"); setCurrentPage(1); }}
-          className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus:outline-none"
+          className="rounded-lg border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-white focus:outline-none [&>option]:bg-zinc-900"
         >
           <option value="active">Active</option>
           <option value="all">All</option>
+        </select>
+        <select
+          value={tagFilter}
+          onChange={(e) => { setTagFilter(e.target.value); setCurrentPage(1); }}
+          className="rounded-lg border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-white focus:outline-none [&>option]:bg-zinc-900"
+        >
+          {allTags.map(tag => (
+            <option key={tag} value={tag}>
+              {tag === "all" ? "All Tags" : tag}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -191,10 +219,11 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {paginatedGroups.map((group) => (
+            {paginatedGroups.map((group, index) => (
               <EventRow
                 key={group.event.id}
                 group={group}
+                index={index}
                 isExpanded={expandedEvents.has(group.event.id)}
                 onToggle={() => toggleExpand(group.event.id)}
                 scaleVolume={scaleVolume}

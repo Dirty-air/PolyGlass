@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/refresh-markets",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/sync/polymarket/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/refresh-markets/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

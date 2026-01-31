@@ -29,6 +29,11 @@ export function OutcomeRow({ market, eventSlug, outcomeMaxVolume, outcomeMaxOI }
   // 获取 outcome 名称，默认 No/Yes
   const [outcome0, outcome1] = market.outcomes ?? ["No", "Yes"];
 
+  // 计算 Yes/No 市值 = liquidity × price
+  const liquidity = market.liquidity || 0;
+  const yesMarketCap = liquidity * market.priceYes;
+  const noMarketCap = liquidity * priceNo;
+
   return (
     <tr className="bg-white/[0.03] text-xs transition hover:bg-white/[0.05]">
       {/* 1. 展开列占位（缩进） */}
@@ -60,6 +65,8 @@ export function OutcomeRow({ market, eventSlug, outcomeMaxVolume, outcomeMaxOI }
             no={priceNo}
             labelYes={outcome1}
             labelNo={outcome0}
+            yesMarketCap={yesMarketCap}
+            noMarketCap={noMarketCap}
           />
         </div>
       </td>

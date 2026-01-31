@@ -1,6 +1,14 @@
 export { getDb } from "./init";
 export { saveTrades, getTrades, getTradeCount } from "./trades";
-export { saveMarkets, getMarkets, getMarketsWithStats, type StoredMarket } from "./markets";
+export {
+  saveMarkets,
+  getMarkets,
+  getMarketsWithStats,
+  queryMarkets,
+  buildTokenMapFromMarkets,
+  type StoredMarket,
+  type MarketFilters,
+} from "./markets";
 export { addTag, getTags, getTagsForAddresses } from "./tags";
 export { getTraderStats } from "./traders";
 export {
@@ -9,7 +17,15 @@ export {
   getEventsWithStats,
   getEventById,
   getMarketsByEventId,
+  getAllMarketEvents,
 } from "./events";
+
+// Sync State 模块
+export {
+  ensureSyncTables,
+  getSyncValue,
+  setSyncValue,
+} from "./sync-state";
 
 // Smart Money 模块
 export {

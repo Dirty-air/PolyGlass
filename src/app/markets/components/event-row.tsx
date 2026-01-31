@@ -17,6 +17,7 @@ export interface EventGroup {
 
 interface EventRowProps {
   group: EventGroup;
+  index: number;
   isExpanded: boolean;
   onToggle: () => void;
   scaleVolume: number;
@@ -38,7 +39,7 @@ function formatDate(dateStr?: string): string {
   return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
 }
 
-export function EventRow({ group, isExpanded, onToggle, scaleVolume, scaleOpenInterest }: EventRowProps) {
+export function EventRow({ group, index, isExpanded, onToggle, scaleVolume, scaleOpenInterest }: EventRowProps) {
   const hasMarkets = group.markets.length > 0;
   const marketCount = group.markets.length;
 
@@ -50,10 +51,16 @@ export function EventRow({ group, isExpanded, onToggle, scaleVolume, scaleOpenIn
 
   const outcomeMaxOI = outcomeMaxVolume * 0.6;
 
+  // 动画延迟，最多延迟 1 秒（前 20 行有明显效果）
+  const animationDelay = Math.min(index * 0.03, 1);
+
   return (
     <Fragment>
       {/* Event 父行 */}
-      <tr className="group transition hover:bg-white/5">
+      <tr
+        className="group transition hover:bg-white/5 animate-fade-in-up"
+        style={{ animationDelay: `${animationDelay}s` }}
+      >
         <td className="px-3 py-3">
           {hasMarkets && (
             <button
@@ -108,7 +115,7 @@ export function EventRow({ group, isExpanded, onToggle, scaleVolume, scaleOpenIn
         <td className="px-3 py-3 text-white/70">{formatDate(group.event.endDate)}</td>
         <td className="px-3 py-3">
           <span className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/70">
-            {group.event.category || "General"}
+            {group.markets[0]?.tags?.[0] || "General"}
           </span>
         </td>
         <td className="px-3 py-3"></td>
