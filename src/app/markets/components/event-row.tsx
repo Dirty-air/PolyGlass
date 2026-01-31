@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
-import { Plus, Minus } from "lucide-react";
+import { Fragment, useMemo } from "react";
+import { Plus, Minus, ExternalLink } from "lucide-react";
 import type { Market, Event } from "@/types/market";
 import { OutcomeRow } from "./outcome-row";
 import { VolumeBar } from "./volume-bar";
@@ -39,14 +39,23 @@ function formatDate(dateStr?: string): string {
 }
 
 export function EventRow({ group, isExpanded, onToggle, scaleVolume, scaleOpenInterest }: EventRowProps) {
-  const hasMultipleMarkets = group.markets.length > 1;
+  const hasMarkets = group.markets.length > 0;
+  const marketCount = group.markets.length;
+
+  // 计算 outcome 级别的 max，用于子行 bar 缩放
+  const outcomeMaxVolume = useMemo(() => {
+    const volumes = group.markets.map(m => m.volume).filter(v => v > 0);
+    return volumes.length > 0 ? Math.max(...volumes) : 1;
+  }, [group.markets]);
+
+  const outcomeMaxOI = outcomeMaxVolume * 0.6;
 
   return (
     <Fragment>
       {/* Event 父行 */}
       <tr className="group transition hover:bg-white/5">
         <td className="px-3 py-3">
-          {hasMultipleMarkets && (
+          {hasMarkets && (
             <button
               onClick={onToggle}
               className="flex h-5 w-5 items-center justify-center rounded text-white/50 hover:bg-white/10 hover:text-white"
@@ -60,14 +69,21 @@ export function EventRow({ group, isExpanded, onToggle, scaleVolume, scaleOpenIn
             {group.image && (
               <img src={group.image} alt="" className="h-8 w-8 rounded-full object-cover" />
             )}
-            <span className="max-w-[300px] truncate text-white">
-              {group.event.title}
-            </span>
-            {hasMultipleMarkets && (
-              <span className="text-xs text-white/40">({group.markets.length})</span>
+            <a
+              href={`https://polymarket.com/event/${group.event.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group/link flex items-center gap-1.5 max-w-[300px] text-white hover:text-blue-400 transition"
+            >
+              <span className="truncate">{group.event.title}</span>
+              <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition flex-shrink-0" />
+            </a>
+            {hasMarkets && (
+              <span className="text-xs text-white/40">({marketCount})</span>
             )}
           </div>
         </td>
+        <td className="px-3 py-3 text-white/40">—</td>
         <td className="px-3 py-3">
           <span className="rounded bg-purple-500/20 px-2 py-0.5 text-xs text-purple-300">
             Polymarket
@@ -103,8 +119,9 @@ export function EventRow({ group, isExpanded, onToggle, scaleVolume, scaleOpenIn
         <OutcomeRow
           key={market.marketId}
           market={market}
-          maxVolume={scaleVolume}
-          maxOpenInterest={scaleOpenInterest}
+          eventSlug={group.event.slug}
+          outcomeMaxVolume={outcomeMaxVolume}
+          outcomeMaxOI={outcomeMaxOI}
         />
       ))}
     </Fragment>
