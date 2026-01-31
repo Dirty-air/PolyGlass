@@ -8,7 +8,7 @@ import { addTag, getTags } from "@/db";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const address = searchParams.get("address") || undefined;
-  return NextResponse.json({ data: getTags(address) });
+  return NextResponse.json({ data: await getTags(address) });
 }
 
 export async function POST(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    addTag(address, tag);
+    await addTag(address, tag);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Tag already exists" }, { status: 409 });

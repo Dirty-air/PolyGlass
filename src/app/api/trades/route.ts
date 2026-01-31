@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Number(searchParams.get("limit")) || 20, 100);
   const offset = Number(searchParams.get("offset")) || 0;
 
-  const trades = getTrades(limit, offset);
-  const total = getTradeCount();
+  const trades = await getTrades(limit, offset);
+  const total = await getTradeCount();
 
   return NextResponse.json({
     data: trades.map((t) => ({

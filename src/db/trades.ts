@@ -41,5 +41,5 @@ export async function getTrades(limit = 20, offset = 0): Promise<TradeRow[]> {
 export async function getTradeCount(): Promise<number> {
   const client = getClient();
   const result = await client.execute("SELECT COUNT(*) as count FROM trades");
-  return (result.rows[0] as { count: number }).count;
+  return (result.rows[0] as unknown as { count: number }).count;
 }

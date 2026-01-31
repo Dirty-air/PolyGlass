@@ -1,5 +1,5 @@
 /**
- * 模块：Events 数据操作
+ * 模块：Events 数据操作（Turso 异步 API）
  */
 import { getDb } from "./init";
 import type { Event, MarketEvent } from "@/types/market";
@@ -16,45 +16,34 @@ const INSERT_MARKET_EVENT_SQL = `
 `;
 
 /**
- * 批量保存事件（事务）
+ * 批量保存事件
  */
-export function saveEvents(events: Event[]): number {
-  const db = getDb();
-  const stmt = db.prepare(INSERT_EVENT_SQL);
-
-  const tx = db.transaction(() => {
-    for (const e of events) {
-      stmt.run(
-        e.id,
-        e.title,
-        e.slug || null,
-        e.description || null,
-        e.category || null,
-        e.endDate || null,
-        e.active ? 1 : 0
-      );
-    }
-    return events.length;
-  });
-
-  return tx();
+export async function saveEvents(events: Event[]): Promise<number> {
+  if (events.length === 0) return 0;
+  const client = getDb();
+  const statements = events.map((e) => ({
+    sql: INSERT_EVENT_SQL,
+    args: [
+      e.id, e.title, e.slug || null, e.description || null,
+      e.category || null, e.endDate || null, e.active ? 1 : 0,
+    ],
+  }));
+  await client.batch(statements, "write");
+  return events.length;
 }
 
 /**
- * 批量保存市场-事件关联（事务）
+ * 批量保存市场-事件关联
  */
-export function saveMarketEvents(relations: MarketEvent[]): number {
-  const db = getDb();
-  const stmt = db.prepare(INSERT_MARKET_EVENT_SQL);
-
-  const tx = db.transaction(() => {
-    for (const r of relations) {
-      stmt.run(r.marketId, r.eventId);
-    }
-    return relations.length;
-  });
-
-  return tx();
+export async function saveMarketEvents(relations: MarketEvent[]): Promise<number> {
+  if (relations.length === 0) return 0;
+  const client = getDb();
+  const statements = relations.map((r) => ({
+    sql: INSERT_MARKET_EVENT_SQL,
+    args: [r.marketId, r.eventId],
+  }));
+  await client.batch(statements, "write");
+  return relations.length;
 }
 
 /** 事件统计信息 */
@@ -72,63 +61,50 @@ interface EventStats {
 /**
  * 获取事件列表（含统计）
  */
-export function getEventsWithStats(): EventStats[] {
-  const db = getDb();
-  return db
-    .prepare(
-      `
-      SELECT
-        e.id,
-        e.title,
-        e.slug,
-        e.category,
-        e.end_date,
-        e.active,
-        COUNT(DISTINCT me.market_id) as market_count,
-        COALESCE(SUM(t.volume), 0) as total_volume
-      FROM events e
-      LEFT JOIN market_events me ON e.id = me.event_id
-      LEFT JOIN (
-        SELECT market_id, SUM(CAST(taker_amount AS REAL) / 1e6) as volume
-        FROM trades
-        GROUP BY market_id
-      ) t ON me.market_id = t.market_id
-      GROUP BY e.id
-      ORDER BY total_volume DESC
-    `
-    )
-    .all() as EventStats[];
+export async function getEventsWithStats(): Promise<EventStats[]> {
+  const client = getDb();
+  const result = await client.execute(`
+    SELECT
+      e.id, e.title, e.slug, e.category, e.end_date, e.active,
+      COUNT(DISTINCT me.market_id) as market_count,
+      COALESCE(SUM(t.volume), 0) as total_volume
+    FROM events e
+    LEFT JOIN market_events me ON e.id = me.event_id
+    LEFT JOIN (
+      SELECT market_id, SUM(CAST(taker_amount AS REAL) / 1e6) as volume
+      FROM trades GROUP BY market_id
+    ) t ON me.market_id = t.market_id
+    GROUP BY e.id
+    ORDER BY total_volume DESC
+  `);
+  return result.rows as unknown as EventStats[];
 }
 
 /**
  * 获取事件详情
  */
-export function getEventById(eventId: string): EventStats | undefined {
-  const db = getDb();
-  return db
-    .prepare(
-      `
+export async function getEventById(eventId: string): Promise<EventStats | undefined> {
+  const client = getDb();
+  const result = await client.execute({
+    sql: `
       SELECT
-        e.id,
-        e.title,
-        e.slug,
-        e.category,
-        e.end_date,
-        e.active,
+        e.id, e.title, e.slug, e.category, e.end_date, e.active,
         COUNT(DISTINCT me.market_id) as market_count,
         COALESCE(SUM(t.volume), 0) as total_volume
       FROM events e
       LEFT JOIN market_events me ON e.id = me.event_id
       LEFT JOIN (
         SELECT market_id, SUM(CAST(taker_amount AS REAL) / 1e6) as volume
-        FROM trades
-        GROUP BY market_id
+        FROM trades GROUP BY market_id
       ) t ON me.market_id = t.market_id
       WHERE e.id = ?
       GROUP BY e.id
-    `
-    )
-    .get(eventId) as EventStats | undefined;
+    `,
+    args: [eventId],
+  });
+  return result.rows.length > 0
+    ? (result.rows[0] as unknown as EventStats)
+    : undefined;
 }
 
 /** 事件下的市场信息 */
@@ -142,14 +118,12 @@ interface EventMarket {
 /**
  * 获取事件下的所有市场
  */
-export function getMarketsByEventId(eventId: string): EventMarket[] {
-  const db = getDb();
-  return db
-    .prepare(
-      `
+export async function getMarketsByEventId(eventId: string): Promise<EventMarket[]> {
+  const client = getDb();
+  const result = await client.execute({
+    sql: `
       SELECT
-        m.id,
-        m.title,
+        m.id, m.title,
         COUNT(t.id) as trade_count,
         COALESCE(SUM(CAST(t.taker_amount AS REAL) / 1e6), 0) as volume
       FROM markets m
@@ -158,7 +132,8 @@ export function getMarketsByEventId(eventId: string): EventMarket[] {
       WHERE me.event_id = ?
       GROUP BY m.id
       ORDER BY volume DESC
-    `
-    )
-    .all(eventId) as EventMarket[];
+    `,
+    args: [eventId],
+  });
+  return result.rows as unknown as EventMarket[];
 }

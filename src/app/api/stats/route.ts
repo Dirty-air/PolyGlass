@@ -2,7 +2,7 @@
  * Stats API - 返回仪表盘统计数据
  */
 import { NextResponse } from "next/server";
-import { getDb } from "@/db/init";
+import { getClient } from "@/db/init";
 
 interface Stats {
   totalTrades: number;
@@ -12,30 +12,32 @@ interface Stats {
 }
 
 export async function GET() {
-  const db = getDb();
+  const client = getClient();
 
-  const tradeStats = db
-    .prepare(
-      `SELECT
-        COUNT(*) as total_trades,
-        SUM(CAST(maker_amount AS REAL) / 1e6) as total_volume
-      FROM trades`
+  const tradeStatsResult = await client.execute(`
+    SELECT
+      COUNT(*) as total_trades,
+      SUM(CAST(maker_amount AS REAL) / 1e6) as total_volume
+    FROM trades
+  `);
+  const tradeStats = tradeStatsResult.rows[0] as unknown as {
+    total_trades: number;
+    total_volume: number;
+  };
+
+  const traderCountResult = await client.execute(`
+    SELECT COUNT(DISTINCT address) as count FROM (
+      SELECT maker as address FROM trades
+      UNION
+      SELECT taker as address FROM trades
     )
-    .get() as { total_trades: number; total_volume: number };
+  `);
+  const traderCount = traderCountResult.rows[0] as unknown as { count: number };
 
-  const traderCount = db
-    .prepare(
-      `SELECT COUNT(DISTINCT address) as count FROM (
-        SELECT maker as address FROM trades
-        UNION
-        SELECT taker as address FROM trades
-      )`
-    )
-    .get() as { count: number };
-
-  const marketCount = db
-    .prepare("SELECT COUNT(DISTINCT market_id) as count FROM trades WHERE market_id IS NOT NULL")
-    .get() as { count: number };
+  const marketCountResult = await client.execute(
+    "SELECT COUNT(DISTINCT market_id) as count FROM trades WHERE market_id IS NOT NULL"
+  );
+  const marketCount = marketCountResult.rows[0] as unknown as { count: number };
 
   const stats: Stats = {
     totalTrades: tradeStats.total_trades,

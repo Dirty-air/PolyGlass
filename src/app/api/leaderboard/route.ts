@@ -2,7 +2,7 @@
  * Leaderboard API - 返回带 PnL 数据的交易者排行
  */
 import { NextResponse } from "next/server";
-import { getDb } from "@/db/init";
+import { getClient } from "@/db/init";
 import { getTagsForAddresses } from "@/db/tags";
 
 interface LeaderboardEntry {
@@ -22,12 +22,11 @@ export async function GET(request: Request) {
   const order = searchParams.get("order") || "desc";
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
 
-  const db = getDb();
+  const client = getClient();
 
   // 计算每个 trader 的 PnL 统计
-  const rows = db
-    .prepare(
-      `
+  const result = await client.execute({
+    sql: `
       WITH trader_stats AS (
         SELECT
           address,
@@ -62,9 +61,11 @@ export async function GET(request: Request) {
       FROM trader_stats
       ORDER BY realized_pnl DESC
       LIMIT ?
-    `
-    )
-    .all(limit) as Array<{
+    `,
+    args: [limit],
+  });
+
+  const rows = result.rows as unknown as Array<{
     address: string;
     trade_count: number;
     market_count: number;
@@ -75,14 +76,14 @@ export async function GET(request: Request) {
 
   // 批量获取标签
   const addresses = rows.map((r) => r.address);
-  const tagsMap = getTagsForAddresses(addresses);
+  const tagsMap = await getTagsForAddresses(addresses);
 
   // 转换为响应格式
   const leaderboard: LeaderboardEntry[] = rows.map((r) => {
     const roi = r.total_invested > 0 ? (r.realized_pnl / r.total_invested) * 100 : 0;
     return {
       address: r.address,
-      totalPnl: r.realized_pnl, // 简化：total = realized
+      totalPnl: r.realized_pnl,
       realizedPnl: r.realized_pnl,
       roi: Math.round(roi * 100) / 100,
       winRate: Math.round(r.win_rate * 100),
@@ -92,7 +93,7 @@ export async function GET(request: Request) {
     };
   });
 
-  // 客户端排序（支持多列）
+  // 客户端排序
   const sortedLeaderboard = [...leaderboard].sort((a, b) => {
     const aVal = a[sortBy as keyof LeaderboardEntry] ?? 0;
     const bVal = b[sortBy as keyof LeaderboardEntry] ?? 0;

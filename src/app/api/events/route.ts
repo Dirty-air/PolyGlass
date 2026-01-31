@@ -6,6 +6,6 @@ import { NextResponse } from "next/server";
 import { getEventsWithStats } from "@/db";
 
 export async function GET() {
-  const events = getEventsWithStats();
+  const events = await getEventsWithStats();
   return NextResponse.json({ data: events });
 }

@@ -1,5 +1,5 @@
 /**
- * 模块E：Traders 统计查询
+ * 模块E：Traders 统计查询（Turso 异步 API）
  * 支持 agent（maker/taker）和 origin（EOA）两种视图
  */
 import { getDb } from "./init";
@@ -60,13 +60,15 @@ const AGENT_SQL = `
  * 获取交易者排行（含标签）
  * @param view "origin" 按 originFrom 聚合（默认），"agent" 按 maker/taker 聚合
  */
-export function getTraderStats(
+export async function getTraderStats(
   limit = 100,
   view: TraderView = "origin"
-): TraderStatsRow[] {
-  const db = getDb();
+): Promise<TraderStatsRow[]> {
+  const client = getDb();
   const sql = view === "origin" ? ORIGIN_SQL : AGENT_SQL;
-  const rows = db.prepare(sql).all(limit) as Array<{
+  const result = await client.execute({ sql, args: [limit] });
+
+  const rows = result.rows as unknown as Array<{
     address: string;
     trade_count: number;
     market_count: number;
@@ -75,7 +77,7 @@ export function getTraderStats(
 
   // 批量获取标签
   const addresses = rows.map((r) => r.address);
-  const tagsMap = getTagsForAddresses(addresses);
+  const tagsMap = await getTagsForAddresses(addresses);
 
   return rows.map((r) => ({
     ...r,

@@ -15,43 +15,43 @@ const INSERT_FILL_SQL = `
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
-/** 批量保存 Fills */
-export function saveFills(fills: Fill[]): number {
-  const db = getDb();
-  const stmt = db.prepare(INSERT_FILL_SQL);
-  const tx = db.transaction(() => {
-    let count = 0;
-    for (const f of fills) {
-      const result = stmt.run(
-        f.address.toLowerCase(), f.marketId, f.outcomeSide, f.sharesDelta,
-        f.cashDeltaUSDC, f.price, f.timestamp, f.txHash, f.logIndex, f.role
-      );
-      if (result.changes > 0) count++;
-    }
-    return count;
-  });
-  return tx();
+/** 批量保存 Fills（Turso 异步 API） */
+export async function saveFills(fills: Fill[]): Promise<number> {
+  if (fills.length === 0) return 0;
+  const client = getDb();
+  const statements = fills.map((f) => ({
+    sql: INSERT_FILL_SQL,
+    args: [
+      f.address.toLowerCase(), f.marketId, f.outcomeSide, f.sharesDelta,
+      f.cashDeltaUSDC, f.price, f.timestamp, f.txHash, f.logIndex, f.role,
+    ],
+  }));
+  const results = await client.batch(statements, "write");
+  return results.reduce((sum, r) => sum + (r.rowsAffected ?? 0), 0);
 }
 
-/** 获取所有 Fills */
-export function getAllFills(): Fill[] {
-  const db = getDb();
-  const rows = db.prepare(`
+/** 获取所有 Fills（Turso 异步 API） */
+export async function getAllFills(): Promise<Fill[]> {
+  const client = getDb();
+  const result = await client.execute(`
     SELECT address, market_id, outcome_side, shares_delta, cash_delta_usdc,
            price, timestamp, tx_hash, log_index, role
     FROM fills ORDER BY timestamp ASC, log_index ASC
-  `).all() as Array<{
-    address: string; market_id: string; outcome_side: string;
-    shares_delta: number; cash_delta_usdc: number; price: number;
-    timestamp: number; tx_hash: string; log_index: number; role: string;
-  }>;
-  return rows.map((r) => ({
-    address: r.address, marketId: r.market_id,
-    outcomeSide: r.outcome_side as "YES" | "NO",
-    sharesDelta: r.shares_delta, cashDeltaUSDC: r.cash_delta_usdc,
-    price: r.price, timestamp: r.timestamp, txHash: r.tx_hash,
-    logIndex: r.log_index, role: r.role as "maker" | "taker",
-  }));
+  `);
+  return result.rows.map((r) => {
+    const row = r as unknown as {
+      address: string; market_id: string; outcome_side: string;
+      shares_delta: number; cash_delta_usdc: number; price: number;
+      timestamp: number; tx_hash: string; log_index: number; role: string;
+    };
+    return {
+      address: row.address, marketId: row.market_id,
+      outcomeSide: row.outcome_side as "YES" | "NO",
+      sharesDelta: row.shares_delta, cashDeltaUSDC: row.cash_delta_usdc,
+      price: row.price, timestamp: row.timestamp, txHash: row.tx_hash,
+      logIndex: row.log_index, role: row.role as "maker" | "taker",
+    };
+  });
 }
 
 /** 获取指定地址的 Fills（Turso 异步 API） */
@@ -85,10 +85,11 @@ export async function getFillsByAddress(address: string): Promise<Fill[]> {
   });
 }
 
-/** 获取最新区块号 */
-export function getLatestFillBlock(): number {
-  const db = getDb();
-  const row = db.prepare(`SELECT MAX(timestamp) as max_block FROM fills`).get() as { max_block: number | null };
+/** 获取最新区块号（Turso 异步 API） */
+export async function getLatestFillBlock(): Promise<number> {
+  const client = getDb();
+  const result = await client.execute(`SELECT MAX(timestamp) as max_block FROM fills`);
+  const row = result.rows[0] as unknown as { max_block: number | null };
   return row?.max_block ?? 0;
 }
 
@@ -108,23 +109,20 @@ const UPSERT_STATS_SQL = `
     score = excluded.score, tags = excluded.tags, updated_at = datetime('now')
 `;
 
-/** 批量保存评分结果 */
-export function saveScoredTraders(traders: ScoredTrader[]): number {
-  const db = getDb();
-  const stmt = db.prepare(UPSERT_STATS_SQL);
-  const tx = db.transaction(() => {
-    let count = 0;
-    for (const t of traders) {
-      const result = stmt.run(
-        t.address.toLowerCase(), t.tradesCount, t.marketsCount, t.volumeUSDC,
-        t.realizedPnL, t.totalBuyCost, t.roi, t.closedMarketsCount,
-        t.winMarketsCount, t.winRate, t.score, JSON.stringify(t.tags)
-      );
-      if (result.changes > 0) count++;
-    }
-    return count;
-  });
-  return tx();
+/** 批量保存评分结果（Turso 异步 API） */
+export async function saveScoredTraders(traders: ScoredTrader[]): Promise<number> {
+  if (traders.length === 0) return 0;
+  const client = getDb();
+  const statements = traders.map((t) => ({
+    sql: UPSERT_STATS_SQL,
+    args: [
+      t.address.toLowerCase(), t.tradesCount, t.marketsCount, t.volumeUSDC,
+      t.realizedPnL, t.totalBuyCost, t.roi, t.closedMarketsCount,
+      t.winMarketsCount, t.winRate, t.score, JSON.stringify(t.tags),
+    ],
+  }));
+  const results = await client.batch(statements, "write");
+  return results.reduce((sum, r) => sum + (r.rowsAffected ?? 0), 0);
 }
 
 /** Trader stats 数据库行类型 */
@@ -225,10 +223,11 @@ export async function getTraderByAddress(address: string): Promise<ScoredTrader 
   };
 }
 
-/** 获取所有 Smart Trader 地址 */
-export function getSmartAddresses(): Set<string> {
-  const db = getDb();
-  const rows = db.prepare(`SELECT address FROM trader_stats WHERE score IS NOT NULL`).all() as Array<{ address: string }>;
+/** 获取所有 Smart Trader 地址（Turso 异步 API） */
+export async function getSmartAddresses(): Promise<Set<string>> {
+  const client = getDb();
+  const result = await client.execute(`SELECT address FROM trader_stats WHERE score IS NOT NULL`);
+  const rows = result.rows as unknown as Array<{ address: string }>;
   return new Set(rows.map((r) => r.address.toLowerCase()));
 }
 
@@ -243,19 +242,16 @@ export function generateSignalId(address: string, marketId: string, outcomeSide:
 
 const INSERT_SIGNAL_SQL = `INSERT OR REPLACE INTO signals (id, address, market_id, outcome_side, net_usdc, timestamp) VALUES (?, ?, ?, ?, ?, ?)`;
 
-/** 批量保存信号 */
-export function saveSignals(signals: Signal[]): number {
-  const db = getDb();
-  const stmt = db.prepare(INSERT_SIGNAL_SQL);
-  const tx = db.transaction(() => {
-    let count = 0;
-    for (const s of signals) {
-      const result = stmt.run(s.id, s.address.toLowerCase(), s.marketId, s.outcomeSide, s.netUSDC, s.timestamp);
-      if (result.changes > 0) count++;
-    }
-    return count;
-  });
-  return tx();
+/** 批量保存信号（Turso 异步 API） */
+export async function saveSignals(signals: Signal[]): Promise<number> {
+  if (signals.length === 0) return 0;
+  const client = getDb();
+  const statements = signals.map((s) => ({
+    sql: INSERT_SIGNAL_SQL,
+    args: [s.id, s.address.toLowerCase(), s.marketId, s.outcomeSide, s.netUSDC, s.timestamp],
+  }));
+  const results = await client.batch(statements, "write");
+  return results.reduce((sum, r) => sum + (r.rowsAffected ?? 0), 0);
 }
 
 /** 获取近期信号（Turso 异步 API） */
@@ -316,9 +312,9 @@ export async function getSignalsByAddress(address: string): Promise<Signal[]> {
   });
 }
 
-/** 从 Fills 生成信号 */
-export function generateSignalsFromFills(fills: Fill[], config: SignalConfig = DEFAULT_SIGNAL_CONFIG): Signal[] {
-  const smartAddresses = getSmartAddresses();
+/** 从 Fills 生成信号（Turso 异步 API） */
+export async function generateSignalsFromFills(fills: Fill[], config: SignalConfig = DEFAULT_SIGNAL_CONFIG): Promise<Signal[]> {
+  const smartAddresses = await getSmartAddresses();
   const blocksPerHour = 1800;
   const maxTimestamp = Math.max(...fills.map((f) => f.timestamp), 0);
   const cutoffBlock = maxTimestamp - config.windowHours * blocksPerHour;

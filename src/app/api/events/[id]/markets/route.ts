@@ -10,12 +10,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const event = getEventById(id);
+  const event = await getEventById(id);
 
   if (!event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  const markets = getMarketsByEventId(id);
+  const markets = await getMarketsByEventId(id);
   return NextResponse.json({ event, markets });
 }

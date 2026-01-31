@@ -15,6 +15,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid view" }, { status: 400 });
   }
 
-  const traders = getTraderStats(100, view);
+  const traders = await getTraderStats(100, view);
   return NextResponse.json({ data: traders });
 }

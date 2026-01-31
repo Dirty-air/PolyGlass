@@ -1,5 +1,5 @@
 /**
- * 模块E：Markets 数据操作
+ * 模块E：Markets 数据操作（Turso 异步 API）
  */
 import { getDb } from "./init";
 import type { Market } from "@/types/market";
@@ -20,42 +20,38 @@ const INSERT_SQL = `
 `;
 
 /**
- * 批量保存市场（事务）
+ * 批量保存市场
  */
-export function saveMarkets(markets: Market[]): number {
-  const db = getDb();
-  const stmt = db.prepare(INSERT_SQL);
-
-  const tx = db.transaction(() => {
-    for (const m of markets) {
-      stmt.run(m.marketId, m.title, m.conditionId, m.tokenYes, m.tokenNo);
-    }
-    return markets.length;
-  });
-
-  return tx();
+export async function saveMarkets(markets: Market[]): Promise<number> {
+  if (markets.length === 0) return 0;
+  const client = getDb();
+  const statements = markets.map((m) => ({
+    sql: INSERT_SQL,
+    args: [m.marketId, m.title, m.conditionId, m.tokenYes, m.tokenNo],
+  }));
+  await client.batch(statements, "write");
+  return markets.length;
 }
 
 /**
  * 获取所有市场
  */
-export function getMarkets(): StoredMarket[] {
-  const db = getDb();
-  const rows = db.prepare("SELECT * FROM markets").all() as Array<{
-    id: string;
-    title: string;
-    condition_id: string;
-    token_yes: string;
-    token_no: string;
-  }>;
-
-  return rows.map((r) => ({
-    marketId: r.id,
-    title: r.title,
-    conditionId: r.condition_id,
-    tokenYes: r.token_yes,
-    tokenNo: r.token_no,
-  }));
+export async function getMarkets(): Promise<StoredMarket[]> {
+  const client = getDb();
+  const result = await client.execute("SELECT * FROM markets");
+  return result.rows.map((r) => {
+    const row = r as unknown as {
+      id: string; title: string; condition_id: string;
+      token_yes: string; token_no: string;
+    };
+    return {
+      marketId: row.id,
+      title: row.title,
+      conditionId: row.condition_id,
+      tokenYes: row.token_yes,
+      tokenNo: row.token_no,
+    };
+  });
 }
 
 /** 市场统计信息 */
@@ -69,21 +65,17 @@ interface MarketStats {
 /**
  * 获取带统计的市场列表
  */
-export function getMarketsWithStats(): MarketStats[] {
-  const db = getDb();
-  return db
-    .prepare(
-      `
-      SELECT
-        m.id,
-        m.title,
-        COUNT(t.id) as trade_count,
-        COALESCE(SUM(CAST(t.taker_amount AS REAL) / 1e6), 0) as volume
-      FROM markets m
-      LEFT JOIN trades t ON m.id = t.market_id
-      GROUP BY m.id
-      ORDER BY trade_count DESC
-    `
-    )
-    .all() as MarketStats[];
+export async function getMarketsWithStats(): Promise<MarketStats[]> {
+  const client = getDb();
+  const result = await client.execute(`
+    SELECT
+      m.id, m.title,
+      COUNT(t.id) as trade_count,
+      COALESCE(SUM(CAST(t.taker_amount AS REAL) / 1e6), 0) as volume
+    FROM markets m
+    LEFT JOIN trades t ON m.id = t.market_id
+    GROUP BY m.id
+    ORDER BY trade_count DESC
+  `);
+  return result.rows as unknown as MarketStats[];
 }

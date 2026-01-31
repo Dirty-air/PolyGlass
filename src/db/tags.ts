@@ -1,5 +1,5 @@
 /**
- * 模块E/H：Tags 数据操作
+ * 模块E/H：Tags 数据操作（Turso 异步 API）
  */
 import { getDb } from "./init";
 
@@ -13,24 +13,28 @@ interface TagRow {
 /**
  * 添加标签
  */
-export function addTag(address: string, tag: string): void {
-  const db = getDb();
-  db.prepare(`
-    INSERT INTO address_tags (address, tag) VALUES (?, ?)
-  `).run(address.toLowerCase(), tag);
+export async function addTag(address: string, tag: string): Promise<void> {
+  const client = getDb();
+  await client.execute({
+    sql: `INSERT INTO address_tags (address, tag) VALUES (?, ?)`,
+    args: [address.toLowerCase(), tag],
+  });
 }
 
 /**
  * 查询标签（可选按地址筛选）
  */
-export function getTags(address?: string): TagRow[] {
-  const db = getDb();
+export async function getTags(address?: string): Promise<TagRow[]> {
+  const client = getDb();
   if (address) {
-    return db
-      .prepare("SELECT * FROM address_tags WHERE address = ?")
-      .all(address.toLowerCase()) as TagRow[];
+    const result = await client.execute({
+      sql: "SELECT * FROM address_tags WHERE address = ?",
+      args: [address.toLowerCase()],
+    });
+    return result.rows as unknown as TagRow[];
   }
-  return db.prepare("SELECT * FROM address_tags").all() as TagRow[];
+  const result = await client.execute("SELECT * FROM address_tags");
+  return result.rows as unknown as TagRow[];
 }
 
 /**
