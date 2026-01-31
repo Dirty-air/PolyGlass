@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { TrendingUp, Users, Trophy, Wallet } from "lucide-react";
 import { Header } from "../components/header";
 import { useSmartMoney } from "../hooks/useSmartMoney";
@@ -43,9 +44,18 @@ function formatUsd(n: number): string {
 }
 
 export default function SmartMoneyPage() {
+  const searchParams = useSearchParams();
   const [view, setView] = useState<"all" | "retail">("retail");
   const { data, loading, error } = useSmartMoney({ limit: 100, view });
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+
+  // 从 URL 参数读取 trader 地址并自动打开详情
+  useEffect(() => {
+    const traderParam = searchParams.get("trader");
+    if (traderParam) {
+      setSelectedAddress(traderParam);
+    }
+  }, [searchParams]);
 
   // 计算统计数据
   const stats = data ? {

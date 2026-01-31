@@ -1,7 +1,9 @@
-import { Trophy, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { Trophy, TrendingUp, ArrowRight } from "lucide-react";
 
 type FeedItem = {
   trader: string;
+  address: string;
   pnl: string;
   market: string;
   timeframe: string;
@@ -9,23 +11,33 @@ type FeedItem = {
 
 export function TraderFeed({ items }: { items: FeedItem[] }) {
   return (
-    <div className="card h-full p-5">
+    <div className="card relative h-full p-5">
       <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-white/50">Trader Activity</p>
-          <h3 className="text-lg font-semibold text-white">Biggest on-chain wins</h3>
+        <div className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-amber-300 drop-shadow-[0_0_10px_rgba(255,204,0,0.5)]" />
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-white/50">Trader Activity</p>
+            <h3 className="text-lg font-semibold text-white">Biggest on-chain wins</h3>
+          </div>
         </div>
-        <Trophy className="h-5 w-5 text-amber-300 drop-shadow-[0_0_10px_rgba(255,204,0,0.5)]" />
+        <Link
+          href="/smart-money"
+          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-white/50 transition hover:bg-white/10 hover:text-teal-300"
+        >
+          View all
+          <ArrowRight className="h-3 w-3" />
+        </Link>
       </div>
 
       <div className="space-y-3">
         {items.map((item) => (
-          <div
-            key={item.trader}
-            className="flex items-center justify-between rounded-xl border border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent px-3 py-3"
+          <Link
+            key={item.address}
+            href={`/smart-money?trader=${item.address}`}
+            className="group flex items-center justify-between rounded-xl border border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent px-3 py-3 transition hover:border-teal-500/30 hover:from-teal-500/10"
           >
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">{item.trader}</span>
+              <span className="text-sm font-semibold text-white group-hover:text-teal-300 transition">{item.trader}</span>
               <span className="text-xs text-white/50">{item.market}</span>
             </div>
             <div className="flex items-center gap-2">
@@ -37,7 +49,7 @@ export function TraderFeed({ items }: { items: FeedItem[] }) {
                 {item.pnl}
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

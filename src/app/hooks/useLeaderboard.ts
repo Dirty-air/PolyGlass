@@ -15,6 +15,7 @@ interface LeaderboardEntry {
 
 interface TraderFeedItem {
   trader: string;
+  address: string;
   pnl: string;
   market: string;
   timeframe: string;
@@ -43,6 +44,7 @@ export function useLeaderboard(limit = 5) {
         setData(
           entries.map((e) => ({
             trader: shortenAddress(e.address),
+            address: e.address,
             pnl: formatUsd(e.realizedPnl),
             market: `${e.marketCount} markets`,
             timeframe: `${e.winRate}% win`,
