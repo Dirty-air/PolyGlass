@@ -244,7 +244,7 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
           <select
             value={rowsPerPage}
             onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-            className="rounded border border-white/10 bg-white/5 px-2 py-1 text-white focus:outline-none"
+            className="rounded border border-white/10 bg-zinc-900 px-2 py-1 text-white focus:outline-none [&>option]:bg-zinc-900"
           >
             <option value={25}>25</option>
             <option value={50}>50</option>
