@@ -108,7 +108,7 @@ export function EventRow({ group, isExpanded, onToggle, scaleVolume, scaleOpenIn
         <td className="px-3 py-3 text-white/70">{formatDate(group.event.endDate)}</td>
         <td className="px-3 py-3">
           <span className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/70">
-            {group.event.category || "General"}
+            {group.markets[0]?.tags?.[0] || "General"}
           </span>
         </td>
         <td className="px-3 py-3"></td>

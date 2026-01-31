@@ -18,6 +18,65 @@ import type {
 
 const logger = createLogger("tokenMap");
 
+// 从共享模块导入（客户端/服务端通用）
+export { normalizeCategory } from "@/lib/category";
+import { normalizeCategory } from "@/lib/category";
+
+/** 从 slug 推断分类 */
+const SLUG_CATEGORY_PATTERNS: Array<[RegExp, string]> = [
+  [/^nba-/, "Sports"],
+  [/^nfl-/, "Sports"],
+  [/^mlb-/, "Sports"],
+  [/^nhl-/, "Sports"],
+  [/^soccer-/, "Sports"],
+  [/^tennis-/, "Sports"],
+  [/^mma-/, "Sports"],
+  [/^boxing-/, "Sports"],
+  [/^esports-/, "Sports"],
+  [/bitcoin|btc|ethereum|eth|crypto|solana|sol/, "Crypto"],
+  [/trump|biden|election|congress|senate|president/, "Politics"],
+  [/fed-|interest-rate|inflation/, "Economy"],
+];
+
+/**
+ * 从 slug 推断分类
+ */
+function inferCategoryFromSlug(slug: string): string | null {
+  const lower = slug.toLowerCase();
+  for (const [pattern, category] of SLUG_CATEGORY_PATTERNS) {
+    if (pattern.test(lower)) {
+      return category;
+    }
+  }
+  return null;
+}
+
+/**
+ * 从 Gamma 市场数据提取标签
+ * 优先级: market.category > events[0].category > slug 推断 > "General"
+ */
+function extractTags(market: GammaMarketResponse): string[] {
+  // 1. 直接从 market.category 获取
+  if (market.category) {
+    return [normalizeCategory(market.category)];
+  }
+
+  // 2. 从 events[0].category 获取
+  const eventCategory = market.events?.[0]?.category;
+  if (eventCategory) {
+    return [normalizeCategory(eventCategory)];
+  }
+
+  // 3. 从 slug 推断
+  const inferredCategory = inferCategoryFromSlug(market.slug);
+  if (inferredCategory) {
+    return [inferredCategory];
+  }
+
+  // 4. 默认
+  return ["General"];
+}
+
 /**
  * 解析 clobTokenIds（可能是字符串或数组）
  */
@@ -110,6 +169,7 @@ export function buildMarketData(gammaMarkets: GammaMarketResponse[]): MarketData
       priceNo,
       volume: m.volumeNum ?? (parseFloat(m.volume || "0") || 0),
       liquidity: m.liquidityNum ?? (parseFloat(m.liquidity || "0") || 0),
+      tags: extractTags(m),
       endDate: m.endDate,
       image: m.image,
       outcomes,

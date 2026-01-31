@@ -56,6 +56,7 @@ export interface GammaEvent {
     priceNo: number;
     volume: number;
     liquidity: number;
+    tags: string[];
     endDate?: string;
     image?: string;
     outcomes?: [string, string];  // [outcome0, outcome1]，如 ["No", "Yes"] 或 ["Bulls", "Heat"]
