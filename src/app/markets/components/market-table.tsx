@@ -169,6 +169,7 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
                   Market <SortIcon field="title" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
+              <th className="px-3 py-3">Price</th>
               <th className="px-3 py-3">Source</th>
               <th className="cursor-pointer px-3 py-3 text-right hover:text-white" onClick={() => handleSort("volume")}>
                 <div className="flex items-center justify-end gap-1">
