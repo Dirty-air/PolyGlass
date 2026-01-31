@@ -24,21 +24,21 @@ export async function GET(_request: Request, { params }: RouteParams) {
     const lowerAddress = address.toLowerCase();
 
     // 查询 trader 统计
-    const trader = getTraderByAddress(lowerAddress);
+    const trader = await getTraderByAddress(lowerAddress);
     if (!trader) {
       return NextResponse.json({ data: null });
     }
 
     // 获取仓位
-    const fills = getFillsByAddress(lowerAddress);
+    const fills = await getFillsByAddress(lowerAddress);
     const allPositions = replayPositions(fills);
     const positions = allPositions.filter((p) => p.address === lowerAddress);
 
     // 获取近期信号
-    const recentSignals = getSignalsByAddress(lowerAddress);
+    const recentSignals = await getSignalsByAddress(lowerAddress);
 
     // 用户自定义标签
-    const userTags = getTagsForAddresses([lowerAddress]);
+    const userTags = await getTagsForAddresses([lowerAddress]);
     const mergedTags = [
       ...trader.tags,
       ...(userTags[lowerAddress] || []),

@@ -11,6 +11,7 @@ export async function GET() {
     return NextResponse.json({
       data: marketData.markets,
       events: marketData.events,
+      marketEvents: marketData.marketEvents,
       tokenMap: marketData.tokenMap,
     });
   } catch (error) {

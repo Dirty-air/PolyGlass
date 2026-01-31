@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
     const windowHours = WINDOW_HOURS_MAP[window] || 24;
 
-    const signals = getRecentSignals(windowHours);
+    const signals = await getRecentSignals(windowHours);
     const data = signals.slice(0, limit);
 
     return NextResponse.json({
