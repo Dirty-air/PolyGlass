@@ -9,6 +9,10 @@ export {
   getEventsWithStats,
   getEventById,
   getMarketsByEventId,
+  getEventsWithSmartMoneyStats,
+  getEventDetailWithSmartMoney,
+  getMarketsWithSmartMoneyByEventId,
+  getSmartMoneyHoldersByMarket,
 } from "./events";
 
 // Smart Money 模块
