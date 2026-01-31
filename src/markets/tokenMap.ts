@@ -109,6 +109,7 @@ export function buildMarketData(gammaMarkets: GammaMarketResponse[]): MarketData
       priceYes,
       priceNo,
       volume: m.volumeNum ?? (parseFloat(m.volume || "0") || 0),
+      liquidity: m.liquidityNum ?? (parseFloat(m.liquidity || "0") || 0),
       endDate: m.endDate,
       image: m.image,
       outcomes,

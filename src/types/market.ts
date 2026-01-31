@@ -25,6 +25,9 @@ export interface GammaEvent {
     active: boolean;
     volume?: string;
     volumeNum?: number;
+    liquidity?: string;
+    liquidityNum?: number;
+    category?: string;
     endDate?: string;
     image?: string;
     events?: GammaEvent[]; // 市场所属的事件列表
@@ -52,6 +55,7 @@ export interface GammaEvent {
     priceYes: number;
     priceNo: number;
     volume: number;
+    liquidity: number;
     endDate?: string;
     image?: string;
     outcomes?: [string, string];  // [outcome0, outcome1]，如 ["No", "Yes"] 或 ["Bulls", "Heat"]

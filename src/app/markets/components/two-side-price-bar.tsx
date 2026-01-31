@@ -6,6 +6,8 @@ interface TwoSidePriceBarProps {
   labelYes?: string;
   labelNo?: string;
   showRatio?: boolean;
+  yesMarketCap?: number;
+  noMarketCap?: number;
 }
 
 /** 计算比率 */
@@ -15,6 +17,14 @@ function calcRatio(yes: number, no: number): string {
   if (ratio >= 100) return ratio.toFixed(0);
   if (ratio >= 10) return ratio.toFixed(1);
   return ratio.toFixed(2);
+}
+
+/** 格式化市值 */
+function formatMarketCap(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  if (value > 0) return `$${value.toFixed(0)}`;
+  return "";
 }
 
 /**
@@ -27,10 +37,14 @@ export function TwoSidePriceBar({
   labelYes = "Yes",
   labelNo = "No",
   showRatio = false,
+  yesMarketCap,
+  noMarketCap,
 }: TwoSidePriceBarProps) {
   // clamp 到 0..1
   const clampedYes = Math.max(0, Math.min(1, yes));
   const clampedNo = Math.max(0, Math.min(1, no));
+
+  const hasMarketCap = (yesMarketCap ?? 0) > 0 || (noMarketCap ?? 0) > 0;
 
   return (
     <div className="flex flex-col gap-1">
@@ -38,9 +52,15 @@ export function TwoSidePriceBar({
       <div className="flex items-center justify-between text-xs">
         <span className="text-red-400">
           {labelNo} <span className="text-white/70">${clampedNo.toFixed(2)}</span>
+          {hasMarketCap && noMarketCap !== undefined && noMarketCap > 0 && (
+            <span className="ml-1 text-white/40">({formatMarketCap(noMarketCap)})</span>
+          )}
         </span>
         <span className="text-green-400">
           {labelYes} <span className="text-white/70">${clampedYes.toFixed(2)}</span>
+          {hasMarketCap && yesMarketCap !== undefined && yesMarketCap > 0 && (
+            <span className="ml-1 text-white/40">({formatMarketCap(yesMarketCap)})</span>
+          )}
         </span>
       </div>
 
