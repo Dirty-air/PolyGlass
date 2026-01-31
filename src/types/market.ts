@@ -54,6 +54,7 @@ export interface GammaEvent {
     volume: number;
     endDate?: string;
     image?: string;
+    outcomes?: [string, string];  // [outcome0, outcome1]，如 ["No", "Yes"] 或 ["Bulls", "Heat"]
   }
 
   /** Outcome (Market 的视图层表示，用于展示在 Event 下) */
