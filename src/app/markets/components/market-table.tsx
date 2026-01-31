@@ -77,12 +77,29 @@ export function MarketTable({ markets, events }: MarketTableProps) {
     return filteredMarkets.slice(start, start + rowsPerPage);
   }, [filteredMarkets, currentPage, rowsPerPage]);
 
-  // 计算当前页数据的最大值（用于柱状图比例）
-  const { maxVolume, maxOpenInterest } = useMemo(() => {
-    const volumes = paginatedMarkets.map((m) => m.volume);
-    const maxVol = Math.max(...volumes, 1);
-    return { maxVolume: maxVol, maxOpenInterest: maxVol * 0.6 };
-  }, [paginatedMarkets]);
+  // 计算全局尺度（基于所有符合筛选条件的数据，而非当前页）
+  // 使用 max 值作为 scale，确保柱状图按比例正确显示
+  const { scaleVolume, scaleOpenInterest } = useMemo(() => {
+    if (filteredMarkets.length === 0) {
+      return { scaleVolume: 1, scaleOpenInterest: 1 };
+    }
+
+    // 过滤有效数值（确保是 number 且非 NaN）
+    const volumes = filteredMarkets
+      .map((m) => m.volume)
+      .filter((v): v is number => typeof v === "number" && !Number.isNaN(v) && v > 0);
+
+    if (volumes.length === 0) {
+      return { scaleVolume: 1, scaleOpenInterest: 1 };
+    }
+
+    // 使用 max 作为 scale，确保所有值都按比例正确显示
+    const maxVol = Math.max(...volumes);
+    const scaleVol = maxVol > 0 ? maxVol : 1;
+
+    // Open Interest 使用同样的比例（因为 OI = volume * 0.6）
+    return { scaleVolume: scaleVol, scaleOpenInterest: scaleVol * 0.6 };
+  }, [filteredMarkets]);
 
   // 搜索/筛选改变时重置页码
   const handleSearchChange = (value: string) => {
@@ -196,8 +213,8 @@ export function MarketTable({ markets, events }: MarketTableProps) {
               <MarketRow
                 key={market.marketId}
                 market={market}
-                maxVolume={maxVolume}
-                maxOpenInterest={maxOpenInterest}
+                maxVolume={scaleVolume}
+                maxOpenInterest={scaleOpenInterest}
               />
             ))}
           </tbody>

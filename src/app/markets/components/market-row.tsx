@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import type { Market } from "@/types/market";
+import { VolumeBar } from "./volume-bar";
 
 interface MarketRowProps {
   market: Market;
@@ -27,8 +28,10 @@ function formatDate(dateStr?: string): string {
 
 export function MarketRow({ market, maxVolume, maxOpenInterest }: MarketRowProps) {
   const openInterest = market.volume * 0.6;
-  const volumePercent = maxVolume > 0 ? (market.volume / maxVolume) * 100 : 0;
-  const oiPercent = maxOpenInterest > 0 ? (openInterest / maxOpenInterest) * 100 : 0;
+
+  // DEBUG: 验证 scale 是否正确传递
+  // eslint-disable-next-line no-console
+  console.log("MarketRow:", market.volume, "denom:", maxVolume);
 
   return (
     <tr className="group transition hover:bg-white/5">
@@ -66,22 +69,16 @@ export function MarketRow({ market, maxVolume, maxOpenInterest }: MarketRowProps
       <td className="px-3 py-3 text-right">
         <div className="flex flex-col items-end gap-1">
           <span className="font-medium text-white">{formatMoney(market.volume)}</span>
-          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-blue-500"
-              style={{ width: `${volumePercent}%` }}
-            />
+          <div className="w-32">
+            <VolumeBar value={market.volume} denom={maxVolume} />
           </div>
         </div>
       </td>
       <td className="px-3 py-3 text-right">
         <div className="flex flex-col items-end gap-1">
           <span className="font-medium text-white">{formatMoney(openInterest)}</span>
-          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-blue-500"
-              style={{ width: `${oiPercent}%` }}
-            />
+          <div className="w-32">
+            <VolumeBar value={openInterest} denom={maxOpenInterest} />
           </div>
         </div>
       </td>
