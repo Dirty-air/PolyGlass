@@ -4,7 +4,9 @@ import { Fragment, useMemo } from "react";
 import { Plus, Minus, ExternalLink } from "lucide-react";
 import type { Market, Event } from "@/types/market";
 import { OutcomeRow } from "./outcome-row";
+import { BetTypeGroupRow } from "./bet-type-group-row";
 import { VolumeBar } from "./volume-bar";
+import { isSportsEvent, groupMarketsByBetType } from "@/lib/bet-type";
 
 /** 分组后的 Event 数据 */
 export interface EventGroup {
@@ -50,6 +52,15 @@ export function EventRow({ group, index, isExpanded, onToggle, scaleVolume, scal
   }, [group.markets]);
 
   const outcomeMaxOI = outcomeMaxVolume * 0.6;
+
+  // 判断是否为体育类事件
+  const isSports = useMemo(() => isSportsEvent(group.markets), [group.markets]);
+
+  // 体育类事件按盘口类型分组
+  const betTypeGroups = useMemo(() => {
+    if (!isSports) return null;
+    return groupMarketsByBetType(group.markets);
+  }, [isSports, group.markets]);
 
   // 动画延迟，最多延迟 1 秒（前 20 行有明显效果）
   const animationDelay = Math.min(index * 0.03, 1);
@@ -121,16 +132,32 @@ export function EventRow({ group, index, isExpanded, onToggle, scaleVolume, scal
         <td className="px-3 py-3"></td>
       </tr>
 
-      {/* 展开后的 Outcome 子行 */}
-      {isExpanded && group.markets.map((market) => (
-        <OutcomeRow
-          key={market.marketId}
-          market={market}
-          eventSlug={group.event.slug}
-          outcomeMaxVolume={outcomeMaxVolume}
-          outcomeMaxOI={outcomeMaxOI}
-        />
-      ))}
+      {/* 展开后的子行：体育类按盘口分组，其他类型直接列出 */}
+      {isExpanded && (
+        isSports && betTypeGroups ? (
+          // 体育类：按盘口类型分组显示
+          betTypeGroups.map((betGroup) => (
+            <BetTypeGroupRow
+              key={betGroup.type}
+              group={betGroup}
+              eventSlug={group.event.slug}
+              outcomeMaxVolume={outcomeMaxVolume}
+              outcomeMaxOI={outcomeMaxOI}
+            />
+          ))
+        ) : (
+          // 非体育类：直接显示所有子市场
+          group.markets.map((market) => (
+            <OutcomeRow
+              key={market.marketId}
+              market={market}
+              eventSlug={group.event.slug}
+              outcomeMaxVolume={outcomeMaxVolume}
+              outcomeMaxOI={outcomeMaxOI}
+            />
+          ))
+        )
+      )}
     </Fragment>
   );
 }
