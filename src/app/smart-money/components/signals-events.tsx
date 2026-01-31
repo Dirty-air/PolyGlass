@@ -86,11 +86,19 @@ function EventCard({ event, onClick }: { event: SmartMoneyEvent; onClick: () => 
   );
 }
 
-export function SignalsEvents({ limit = 20 }: SignalsEventsProps) {
+export function SignalsEvents({ limit = 100 }: SignalsEventsProps) {
   const [events, setEvents] = useState<SmartMoneyEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const router = useRouter();
+
+  const rowsPerPage = 8; // 与 stats 表格保持一致
+  const totalPages = Math.ceil(events.length / rowsPerPage);
+  const paginatedEvents = events.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   useEffect(() => {
     async function fetchEvents() {
@@ -99,7 +107,8 @@ export function SignalsEvents({ limit = 20 }: SignalsEventsProps) {
         const res = await fetch(`/api/events?smart_money=true&limit=${limit}`);
         if (!res.ok) throw new Error("Failed to fetch events");
         const json = await res.json();
-        setEvents(json.data.slice(0, limit));
+        setEvents(json.data);
+        setCurrentPage(1);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
@@ -123,7 +132,7 @@ export function SignalsEvents({ limit = 20 }: SignalsEventsProps) {
       {/* Loading */}
       {loading && (
         <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: rowsPerPage }).map((_, i) => (
             <div key={i} className="h-36 animate-pulse rounded-xl bg-white/10" />
           ))}
         </div>
@@ -138,16 +147,46 @@ export function SignalsEvents({ limit = 20 }: SignalsEventsProps) {
       )}
 
       {/* Event List */}
-      {!loading && events.length > 0 && (
-        <div className="space-y-3">
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              onClick={() => router.push(`/smart-money/events/${event.id}`)}
-            />
-          ))}
-        </div>
+      {!loading && paginatedEvents.length > 0 && (
+        <>
+          <div className="space-y-3">
+            {paginatedEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onClick={() => router.push(`/smart-money/events/${event.id}`)}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+              <span className="text-sm text-white/50">
+                Showing {((currentPage - 1) * rowsPerPage) + 1}-{Math.min(currentPage * rowsPerPage, events.length)} of {events.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-white/70">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Empty */}

@@ -114,14 +114,9 @@ export default function SmartMoneyPage() {
         </div>
       )}
 
-      {/* Main Content: Signals Events (Left) + Leaderboard (Right) */}
+      {/* Main Content: Leaderboard (Left) + Signals Events (Right) */}
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        {/* Left: Signals Events */}
-        <div>
-          <SignalsEvents limit={15} />
-        </div>
-
-        {/* Right: Smart Traders Leaderboard */}
+        {/* Left: Smart Traders Leaderboard */}
         <div>
           {loading ? (
             <div className="rounded-xl border border-white/10 bg-white/5">
@@ -145,6 +140,11 @@ export default function SmartMoneyPage() {
           ) : data && (
             <SmartTradersTable data={data} onSelectTrader={setSelectedAddress} />
           )}
+        </div>
+
+        {/* Right: Signals Events */}
+        <div>
+          <SignalsEvents />
         </div>
       </div>
 
