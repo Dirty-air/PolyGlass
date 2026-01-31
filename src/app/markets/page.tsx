@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { MarketTable } from "./components/market-table";
+import { Header } from "../components/header";
 import { useMarkets } from "../hooks/useMarkets";
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -14,17 +13,12 @@ export default function MarketsPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-6 py-8 lg:px-10">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/10"
-        >
-          <ArrowLeft className="h-5 w-5 text-white/70" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold text-white">All Markets</h1>
-        </div>
+      {/* Header 导航 */}
+      <Header />
+
+      {/* 页面标题 */}
+      <div>
+        <h1 className="text-2xl font-semibold text-white">All Markets</h1>
       </div>
 
       {/* Error State */}
