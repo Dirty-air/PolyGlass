@@ -1,4 +1,4 @@
-export type { GammaMarketResponse, Market, TokenMapping, TokenMap, MarketData } from "./market";
+export type { GammaMarketResponse, Market, TokenMapping, TokenMap, MarketData, Outcome, EventWithMarkets } from "./market";
 export type {
   RawLog,
   DecodedTrade,

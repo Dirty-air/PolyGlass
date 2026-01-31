@@ -55,7 +55,28 @@ export interface GammaEvent {
     endDate?: string;
     image?: string;
   }
-  
+
+  /** Outcome (Market 的视图层表示，用于展示在 Event 下) */
+  export interface Outcome {
+    id: string;
+    title: string;
+    priceYes: number;
+    priceNo: number;
+    volume: number;
+    openInterest: number;
+    slug: string;
+    image?: string;
+    source: "Polymarket" | "Kalshi" | "Limitless";
+    active: boolean;
+  }
+
+  /** Event with grouped markets (视图层数据) */
+  export interface EventWithMarkets extends Event {
+    markets: Market[];
+    totalVolume: number;
+    totalOpenInterest: number;
+  }
+
   /** 市场与事件的关联 */
   export interface MarketEvent {
     marketId: string;

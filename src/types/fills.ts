@@ -49,6 +49,12 @@ export interface TraderStats {
 export interface ScoredTrader extends TraderStats {
   score: number;
   tags: string[];
+  // Retail 过滤相关字段
+  originType?: "EOA" | "CONTRACT" | "PROXY";
+  isRelayer?: boolean;
+  isProxyWallet?: boolean | null;
+  hasDeposit?: boolean;
+  netDepositUSDC?: number;
 }
 
 /** 跟单信号 */
