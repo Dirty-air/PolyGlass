@@ -219,10 +219,11 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {paginatedGroups.map((group) => (
+            {paginatedGroups.map((group, index) => (
               <EventRow
                 key={group.event.id}
                 group={group}
+                index={index}
                 isExpanded={expandedEvents.has(group.event.id)}
                 onToggle={() => toggleExpand(group.event.id)}
                 scaleVolume={scaleVolume}
