@@ -46,8 +46,20 @@ export async function saveMarketEvents(relations: MarketEvent[]): Promise<number
   return relations.length;
 }
 
-/** 事件统计信息 */
-interface EventStats {
+/** 事件统计信息（驼峰式字段） */
+export interface EventStats {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  endDate: string;
+  active: number;
+  marketCount: number;
+  totalVolume: number;
+}
+
+/** EventRow from DB (snake_case) */
+interface EventRow {
   id: string;
   title: string;
   slug: string;
@@ -59,7 +71,7 @@ interface EventStats {
 }
 
 /**
- * 获取事件列表（含统计）
+ * 获取事件列表（含统计），返回驼峰式字段
  */
 export async function getEventsWithStats(): Promise<EventStats[]> {
   const client = getDb();
@@ -77,7 +89,16 @@ export async function getEventsWithStats(): Promise<EventStats[]> {
     GROUP BY e.id
     ORDER BY total_volume DESC
   `);
-  return result.rows as unknown as EventStats[];
+  return (result.rows as unknown as EventRow[]).map((row) => ({
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    category: row.category,
+    endDate: row.end_date,
+    active: row.active,
+    marketCount: row.market_count,
+    totalVolume: row.total_volume,
+  }));
 }
 
 /**
@@ -102,9 +123,18 @@ export async function getEventById(eventId: string): Promise<EventStats | undefi
     `,
     args: [eventId],
   });
-  return result.rows.length > 0
-    ? (result.rows[0] as unknown as EventStats)
-    : undefined;
+  if (result.rows.length === 0) return undefined;
+  const row = result.rows[0] as unknown as EventRow;
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    category: row.category,
+    endDate: row.end_date,
+    active: row.active,
+    marketCount: row.market_count,
+    totalVolume: row.total_volume,
+  };
 }
 
 /** 事件下的市场信息 */
