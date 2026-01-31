@@ -91,8 +91,21 @@ export async function queryMarkets(filters: MarketFilters = {}): Promise<Market[
     ? await db.execute({ sql, args })
     : await db.execute(sql);
 
+  const now = Date.now();
   return result.rows.map((r) => {
     const row = r as Record<string, unknown>;
+    const endDate = row.end_date as string | undefined;
+    const dbActive = (row.active as number) === 1;
+
+    // 动态判断 active：必须同时满足 db.active=1 且 endDate 未过期
+    let active = dbActive;
+    if (dbActive && endDate) {
+      const endTime = new Date(endDate).getTime();
+      if (endTime < now) {
+        active = false;
+      }
+    }
+
     return {
       marketId: row.id as string,
       title: row.title as string,
@@ -105,10 +118,10 @@ export async function queryMarkets(filters: MarketFilters = {}): Promise<Market[
       volume: (row.volume as number) || 0,
       liquidity: (row.liquidity as number) || 0,
       tags: row.tags ? JSON.parse(row.tags as string) : [],
-      endDate: row.end_date as string | undefined,
+      endDate,
       image: row.image as string | undefined,
       outcomes: row.outcomes ? JSON.parse(row.outcomes as string) : ["No", "Yes"],
-      active: (row.active as number) === 1,
+      active,
     };
   });
 }

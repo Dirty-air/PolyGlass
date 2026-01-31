@@ -23,6 +23,7 @@ export interface GammaEvent {
     outcomes: string | string[];
     outcomePrices: string | string[]; // 价格数组 ["0.5", "0.5"]
     active: boolean;
+    closed?: boolean;  // 市场是否已结算
     volume?: string;
     volumeNum?: number;
     liquidity?: string;

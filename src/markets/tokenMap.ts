@@ -78,6 +78,27 @@ function extractTags(market: GammaMarketResponse): string[] {
 }
 
 /**
+ * 综合判断市场是否真正活跃
+ * Gamma API 的 active 字段不可靠（closed=true 时仍可能 active=true）
+ * 需要综合 active、closed、endDate 三个字段判断
+ */
+function isMarketActive(m: GammaMarketResponse): boolean {
+  // closed=true 表示已结算，一定不活跃
+  if (m.closed) return false;
+
+  // active=false 表示已下架
+  if (!m.active) return false;
+
+  // endDate 已过期也视为不活跃
+  if (m.endDate) {
+    const end = new Date(m.endDate);
+    if (end.getTime() < Date.now()) return false;
+  }
+
+  return true;
+}
+
+/**
  * 解析 clobTokenIds（可能是字符串或数组）
  */
 function parseClobTokenIds(raw: string | string[] | undefined): string[] | null {
@@ -173,7 +194,7 @@ export function buildMarketData(gammaMarkets: GammaMarketResponse[]): MarketData
       endDate: m.endDate,
       image: m.image,
       outcomes,
-      active: m.active,
+      active: isMarketActive(m),
     });
 
     // clobTokenIds[0] = NO, clobTokenIds[1] = YES
