@@ -15,7 +15,7 @@
     "demo": "pnpm fetch && pnpm dev"
   },
   "dependencies": {
-    "better-sqlite3": "^11.8.1",
+    "@libsql/client": "^0.17.0",
     "clsx": "^2.1.1",
     "ethers": "^6.14.1",
     "lucide-react": "^0.563.0",
@@ -33,6 +33,7 @@
     "@types/react-dom": "^19",
     "@types/testing-library__jest-dom": "^6.0.0",
     "@vitejs/plugin-react": "^5.1.2",
+    "better-sqlite3": "^11.8.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "^27.4.0",
