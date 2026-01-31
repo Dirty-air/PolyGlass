@@ -10,7 +10,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 }
 
 export default function MarketsPage() {
-  const { markets, events, loading, error } = useMarkets();
+  const { markets, events, marketEvents, loading, error } = useMarkets();
 
   return (
     <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-6 py-8 lg:px-10">
@@ -58,8 +58,8 @@ export default function MarketsPage() {
       )}
 
       {/* Markets Table */}
-      {!loading && markets && events && (
-        <MarketTable markets={markets} events={events} />
+      {!loading && markets && events && marketEvents && (
+        <MarketTable markets={markets} events={events} marketEvents={marketEvents} />
       )}
     </main>
   );
