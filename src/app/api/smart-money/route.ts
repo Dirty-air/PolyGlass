@@ -59,11 +59,16 @@ export async function GET(request: Request) {
       labels: generateLabels(t),
     }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       data,
       total: data.length,
       view,
     });
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=120, stale-while-revalidate=600"
+    );
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

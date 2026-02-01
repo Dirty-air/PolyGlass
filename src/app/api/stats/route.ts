@@ -46,5 +46,10 @@ export async function GET() {
     activeMarkets: marketCount.count,
   };
 
-  return NextResponse.json({ data: stats });
+  const response = NextResponse.json({ data: stats });
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=120, stale-while-revalidate=600"
+  );
+  return response;
 }

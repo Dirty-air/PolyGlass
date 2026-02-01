@@ -103,5 +103,10 @@ export async function GET(request: Request) {
     return 0;
   });
 
-  return NextResponse.json({ data: sortedLeaderboard });
+  const response = NextResponse.json({ data: sortedLeaderboard });
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=120, stale-while-revalidate=600"
+  );
+  return response;
 }
