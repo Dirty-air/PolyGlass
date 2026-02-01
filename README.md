@@ -123,6 +123,44 @@ pnpm fetch      # 同步 Smart Money 链上数据
 
 ---
 
+## 🔄 数据同步与回填
+
+### 自动同步
+
+Markets 页面数据从 Polymarket Gamma API **自动同步**，内存缓存 60 秒，部署后无需手动操作。
+
+### 手动同步
+
+Smart Money 链上数据需要通过脚本手动同步：
+
+```bash
+pnpm fetch                    # 主同步：拉取最近 3 天的 OrderFilled 链上日志
+```
+
+### 数据回填
+
+项目提供了一组回填脚本，用于补充历史数据和增强数据维度：
+
+| 脚本 | 功能 | 说明 |
+|------|------|------|
+| `backfill-origin-type.ts` | 回填地址类型 | 识别 EOA / 合约地址 |
+| `backfill-relayer.ts` | 回填 relayer 信息 | 识别代理交易 |
+| `backfill-deposits.ts` | 回填 USDC 存款 | 扫描入金事件 |
+
+按顺序执行：
+
+```bash
+pnpm tsx scripts/backfill-origin-type.ts
+pnpm tsx scripts/backfill-relayer.ts
+pnpm tsx scripts/backfill-deposits.ts
+```
+
+> ⚠️ **注意事项**
+> - 主同步脚本 `pnpm fetch` 默认扫描最近 **3 天**（约 129,600 区块）的链上日志。如需回填更早的历史数据，可通过 `scanBlockRange(fromBlock, toBlock)` 函数指定区块范围。
+> - 回填速度取决于所使用的 **RPC 节点性能和速率限制**。免费 RPC 可能较慢，推荐使用 Alchemy / Infura 等付费节点以获得更快的回填速度。
+
+---
+
 ## 👥 团队成员
 
 <!-- 在此添加团队成员 -->
