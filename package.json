@@ -19,6 +19,7 @@
     "@ai-sdk/openai": "^3.0.23",
     "@ai-sdk/openai-compatible": "^2.0.24",
     "@libsql/client": "^0.17.0",
+    "@metamask/sdk": "^0.34.0",
     "@polymarket/clob-client": "^5.2.1",
     "@polymarket/order-utils": "^3.0.1",
     "@radix-ui/react-slot": "^1.2.4",
