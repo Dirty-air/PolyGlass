@@ -154,13 +154,14 @@ pnpm dev
 |----------|---------|
 | ![overview](screenshots/demo-1.png) | ![markets](screenshots/demo-2.png) |
 
-| Smart Money | Wallet Connect |
+| Smart Money | wallet search |
 |-------------|----------------|
-| ![smart-money](screenshots/demo-4.png) | ![connect](screenshots/demo-3.png) |
+| ![smart-money](screenshots/demo-4.png) | ![wallet-search](screenshots/demo-3.png) |
 
 | Insights | Calendar |
 |----------|----------|
 | ![insights](screenshots/demo-5.png) | ![calendar](screenshots/demo-6.png) |
+
 
 ---
 
