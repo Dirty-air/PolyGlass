@@ -210,7 +210,6 @@ pnpm tsx scripts/backfill-deposits.ts
 
 - [ ] **多平台聚合** - 接入 Azuro、Overtime 等预测市场，统一数据视图
 - [ ] **跨平台套利** - 识别不同平台间的赔率差异
-- [ ] **AI 交易信号** - 基于 LLM 的市场趋势预测与交易建议
 
 ### 🌐 远期愿景
 
