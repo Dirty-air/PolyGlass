@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 interface TwoSidePriceBarProps {
   yes: number;
   no: number;
@@ -31,7 +33,7 @@ function formatMarketCap(value: number): string {
  * 双向价格柱状图
  * No 从左向右填充，Yes 从右向左填充
  */
-export function TwoSidePriceBar({
+export const TwoSidePriceBar = memo(function TwoSidePriceBar({
   yes,
   no,
   labelYes = "Yes",
@@ -86,4 +88,4 @@ export function TwoSidePriceBar({
       )}
     </div>
   );
-}
+});

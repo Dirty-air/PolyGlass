@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useDeferredValue, memo } from "react";
 import { Search, ChevronUp, ChevronDown } from "lucide-react";
 import type { Market, Event, MarketEvent } from "@/types/market";
 import { EventRow, type EventGroup } from "./event-row";
@@ -15,14 +15,16 @@ type SortField = "title" | "volume" | "priceYes" | "endDate";
 type SortDirection = "asc" | "desc";
 
 /** 排序图标 */
-function SortIcon({ field, currentField, direction }: { field: SortField; currentField: SortField; direction: SortDirection }) {
+const SortIcon = memo(function SortIcon({ field, currentField, direction }: {
+  field: SortField; currentField: SortField; direction: SortDirection;
+}) {
   if (field !== currentField) {
     return <ChevronUp className="h-3 w-3 text-white/30" />;
   }
   return direction === "asc"
     ? <ChevronUp className="h-3 w-3 text-white" />
     : <ChevronDown className="h-3 w-3 text-white" />;
-}
+});
 
 export function MarketTable({ markets, events, marketEvents }: MarketTableProps) {
   const [search, setSearch] = useState("");
@@ -31,15 +33,18 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
   const [sortField, setSortField] = useState<SortField>("volume");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(100);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+
+  // 使用 useDeferredValue 延迟搜索词，避免每次输入都触发完整的筛选计算
+  const deferredSearch = useDeferredValue(search);
 
   // 收集所有标签（从 markets 的 tags 提取）
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
-    markets.forEach(m => {
-      m.tags?.forEach(t => tagSet.add(t));
-    });
+    for (const m of markets) {
+      if (m.tags) for (const t of m.tags) tagSet.add(t);
+    }
     return ["all", ...Array.from(tagSet).sort()];
   }, [markets]);
 
@@ -78,12 +83,12 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
     return groups;
   }, [markets, events, marketEvents]);
 
-  // 过滤和排序
+  // 过滤和排序 - 使用 deferredSearch 而非 search
   const filteredGroups = useMemo(() => {
-    let result = [...eventGroups];
+    let result = eventGroups;
 
-    if (search.trim()) {
-      const term = search.toLowerCase();
+    if (deferredSearch.trim()) {
+      const term = deferredSearch.toLowerCase();
       result = result.filter((g) =>
         g.event.title.toLowerCase().includes(term) ||
         g.markets.some(m => m.title.toLowerCase().includes(term))
@@ -94,14 +99,15 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
       result = result.filter((g) => g.markets.some(m => m.active));
     }
 
-    // 标签筛选（检查 group 中的 markets 是否有匹配的 tag）
     if (tagFilter !== "all") {
       result = result.filter((g) =>
         g.markets.some(m => m.tags?.includes(tagFilter))
       );
     }
 
-    result.sort((a, b) => {
+    // 只在需要排序时创建新数组
+    const sorted = [...result];
+    sorted.sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
         case "title": cmp = a.event.title.localeCompare(b.event.title); break;
@@ -112,8 +118,8 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
       return sortDirection === "asc" ? cmp : -cmp;
     });
 
-    return result;
-  }, [eventGroups, search, statusFilter, tagFilter, sortField, sortDirection]);
+    return sorted;
+  }, [eventGroups, deferredSearch, statusFilter, tagFilter, sortField, sortDirection]);
 
   const totalPages = Math.ceil(filteredGroups.length / rowsPerPage);
   const paginatedGroups = useMemo(() => {
@@ -129,7 +135,8 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
     return { scaleVolume: maxVol > 0 ? maxVol : 1, scaleOpenInterest: maxVol * 0.6 };
   }, [filteredGroups]);
 
-  const toggleExpand = (eventId: string) => {
+  // 使用 useCallback 稳定引用，避免子组件因 onToggle 变化而重渲染
+  const toggleExpand = useCallback((eventId: string) => {
     setExpandedEvents(prev => {
       const next = new Set(prev);
       if (next.has(eventId)) {
@@ -139,16 +146,41 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
+  const handleSort = useCallback((field: SortField) => {
+    setSortField(prev => {
+      if (prev === field) {
+        setSortDirection(d => (d === "asc" ? "desc" : "asc"));
+        return prev;
+      }
       setSortDirection("desc");
-    }
-  };
+      return field;
+    });
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setCurrentPage(1);
+  }, []);
+
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatusFilter(e.target.value as "active" | "all");
+    setCurrentPage(1);
+  }, []);
+
+  const handleTagChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTagFilter(e.target.value);
+    setCurrentPage(1);
+  }, []);
+
+  const handleRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRowsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  }, []);
+
+  // 搜索是否在等待 deferred 更新
+  const isStaleSearch = search !== deferredSearch;
 
   return (
     <div className="flex flex-col gap-4">
@@ -160,13 +192,16 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
             type="text"
             placeholder="Search markets..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            onChange={handleSearchChange}
             className="flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
           />
+          {isStaleSearch && (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+          )}
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value as "active" | "all"); setCurrentPage(1); }}
+          onChange={handleStatusChange}
           className="rounded-lg border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-white focus:outline-none [&>option]:bg-zinc-900"
         >
           <option value="active">Active</option>
@@ -174,7 +209,7 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
         </select>
         <select
           value={tagFilter}
-          onChange={(e) => { setTagFilter(e.target.value); setCurrentPage(1); }}
+          onChange={handleTagChange}
           className="rounded-lg border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-white focus:outline-none [&>option]:bg-zinc-900"
         >
           {allTags.map(tag => (
@@ -186,7 +221,7 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
       </div>
 
       {/* 表格 */}
-      <div className="overflow-x-auto rounded-lg border border-white/10">
+      <div className={`overflow-x-auto rounded-lg border border-white/10 ${isStaleSearch ? "opacity-70" : ""} transition-opacity`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-white/5 text-left text-xs text-white/60">
@@ -242,7 +277,7 @@ export function MarketTable({ markets, events, marketEvents }: MarketTableProps)
           <span>Rows per page</span>
           <select
             value={rowsPerPage}
-            onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+            onChange={handleRowsPerPageChange}
             className="rounded border border-white/10 bg-zinc-900 px-2 py-1 text-white focus:outline-none [&>option]:bg-zinc-900"
           >
             <option value={25}>25</option>

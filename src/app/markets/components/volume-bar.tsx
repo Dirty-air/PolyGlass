@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 interface VolumeBarProps {
   value: number;
   denom: number;
@@ -8,7 +10,7 @@ interface VolumeBarProps {
  * @param value - 原始数值
  * @param denom - 全局尺度（p95 或 max）
  */
-export function VolumeBar({ value, denom }: VolumeBarProps) {
+export const VolumeBar = memo(function VolumeBar({ value, denom }: VolumeBarProps) {
   // clamp 到 0..100，确保不会超出轨道
   const rawPct = denom > 0 ? (value / denom) * 100 : 0;
   const pct = Math.max(0, Math.min(rawPct, 100));
@@ -23,4 +25,4 @@ export function VolumeBar({ value, denom }: VolumeBarProps) {
       />
     </div>
   );
-}
+});

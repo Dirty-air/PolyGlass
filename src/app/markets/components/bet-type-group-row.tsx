@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, Fragment, memo } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { Market } from "@/types/market";
 import type { BetTypeGroup } from "@/lib/bet-type";
@@ -18,7 +18,7 @@ interface BetTypeGroupRowProps {
  * 盘口类型分组行
  * 用于体育类市场的盘口聚合展示
  */
-export function BetTypeGroupRow({
+export const BetTypeGroupRow = memo(function BetTypeGroupRow({
   group,
   eventSlug,
   outcomeMaxVolume,
@@ -83,4 +83,4 @@ export function BetTypeGroupRow({
         ))}
     </Fragment>
   );
-}
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { ExternalLink } from "lucide-react";
 import type { Market } from "@/types/market";
 import { VolumeBar } from "./volume-bar";
@@ -20,7 +21,7 @@ function formatMoney(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
-export function OutcomeRow({ market, eventSlug, outcomeMaxVolume, outcomeMaxOI }: OutcomeRowProps) {
+export const OutcomeRow = memo(function OutcomeRow({ market, eventSlug, outcomeMaxVolume, outcomeMaxOI }: OutcomeRowProps) {
   const openInterest = market.volume * 0.6;
   const priceNo = 1 - market.priceYes;
   const hasVolume = market.volume > 0;
@@ -116,4 +117,4 @@ export function OutcomeRow({ market, eventSlug, outcomeMaxVolume, outcomeMaxOI }
       <td className="py-2"></td>
     </tr>
   );
-}
+});

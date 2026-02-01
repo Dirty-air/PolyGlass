@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
+import { Fragment, memo, useMemo } from "react";
 import { Plus, Minus, ExternalLink } from "lucide-react";
 import type { Market, Event } from "@/types/market";
 import { OutcomeRow } from "./outcome-row";
@@ -41,7 +41,7 @@ function formatDate(dateStr?: string): string {
   return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
 }
 
-export function EventRow({ group, index, isExpanded, onToggle, scaleVolume, scaleOpenInterest }: EventRowProps) {
+export const EventRow = memo(function EventRow({ group, index, isExpanded, onToggle, scaleVolume, scaleOpenInterest }: EventRowProps) {
   const hasMarkets = group.markets.length > 0;
   const marketCount = group.markets.length;
 
@@ -160,4 +160,4 @@ export function EventRow({ group, index, isExpanded, onToggle, scaleVolume, scal
       )}
     </Fragment>
   );
-}
+});

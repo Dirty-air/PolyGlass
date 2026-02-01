@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Market, Event, MarketEvent } from "@/types/market";
 
 /** API 响应结构 */
@@ -11,29 +11,35 @@ interface MarketsResponse {
   tokenMap: Record<string, { marketId: string; outcome: "YES" | "NO" }>;
 }
 
+/** 从 API 获取市场数据 */
+async function fetchMarkets(): Promise<MarketsResponse> {
+  const res = await fetch("/api/markets");
+  if (!res.ok) throw new Error(`Failed to fetch markets: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * 市场数据 Hook（基于 React Query）
+ *
+ * 优化点：
+ * - 5 分钟 staleTime：避免频繁请求
+ * - 自动缓存：跨页面导航时复用数据
+ * - 请求去重：多个组件同时调用时只发一次请求
+ */
 export function useMarkets() {
-  const [markets, setMarkets] = useState<Market[] | null>(null);
-  const [events, setEvents] = useState<Event[] | null>(null);
-  const [marketEvents, setMarketEvents] = useState<MarketEvent[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["markets"],
+    queryFn: fetchMarkets,
+  });
 
-  useEffect(() => {
-    fetch("/api/markets")
-      .then((res) => res.json())
-      .then((json: MarketsResponse) => {
-        // Ensure data exists and is an array
-        const marketData = Array.isArray(json.data) ? json.data : [];
+  // Ensure data exists and is an array
+  const markets = data?.data && Array.isArray(data.data) ? data.data : null;
 
-        // 返回完整的市场数据，不做随机打乱
-        // 随机选择逻辑由调用方（如主页）自行处理
-        setMarkets(marketData);
-        setEvents(json.events);
-        setMarketEvents(json.marketEvents);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-return { markets, events, marketEvents, loading, error };
+  return {
+    markets,
+    events: data?.events ?? null,
+    marketEvents: data?.marketEvents ?? null,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
