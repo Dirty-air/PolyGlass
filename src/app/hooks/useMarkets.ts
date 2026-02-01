@@ -23,6 +23,7 @@ async function fetchMarkets(): Promise<MarketsResponse> {
  *
  * 优化点：
  * - 5 分钟 staleTime：避免频繁请求
+ * - 30 分钟 gcTime：长时间保留缓存
  * - 自动缓存：跨页面导航时复用数据
  * - 请求去重：多个组件同时调用时只发一次请求
  */
@@ -30,6 +31,8 @@ export function useMarkets() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["markets"],
     queryFn: fetchMarkets,
+    staleTime: 5 * 60 * 1000, // 5 分钟内不重新请求
+    gcTime: 30 * 60 * 1000,   // 缓存保留 30 分钟
   });
 
   // Ensure data exists and is an array

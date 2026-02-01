@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { ScoredTrader } from "@/types/fills";
 
 /** 兼容旧版接口的类型定义 */
@@ -59,36 +59,46 @@ function toSmartMoneyEntry(trader: SmartMoneyApiResponse): SmartMoneyEntry {
   };
 }
 
+/** 从 API 获取 Smart Money 数据 */
+async function fetchSmartMoney(
+  sortBy: string,
+  limit: number,
+  view: ViewMode
+): Promise<SmartMoneyEntry[]> {
+  const params = new URLSearchParams({
+    sort: sortBy,
+    limit: String(limit),
+    view: view,
+  });
+
+  const res = await fetch(`/api/smart-money?${params}`);
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return (json.data as SmartMoneyApiResponse[]).map(toSmartMoneyEntry);
+}
+
 /**
- * 获取 Smart Money 排行榜 Hook
+ * 获取 Smart Money 排行榜 Hook（基于 React Query）
+ *
+ * 优化点：
+ * - 2 分钟 staleTime：避免频繁请求
+ * - 请求去重：多个组件同时调用时只发一次请求
+ * - 自动缓存：跨页面导航时复用数据
  */
 export function useSmartMoney(options: UseSmartMoneyOptions = {}) {
-  const [data, setData] = useState<SmartMoneyEntry[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const { sortBy = "score", limit = 100, view = "retail" } = options;
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["smart-money", sortBy, limit, view],
+    queryFn: () => fetchSmartMoney(sortBy, limit, view),
+    staleTime: 2 * 60 * 1000, // 2 分钟内不重新请求
+    gcTime: 10 * 60 * 1000,   // 缓存保留 10 分钟
+  });
 
-    const params = new URLSearchParams({
-      sort: sortBy,
-      limit: String(limit),
-      view: view,
-    });
-
-    fetch(`/api/smart-money?${params}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.error) throw new Error(json.error);
-        const entries = (json.data as SmartMoneyApiResponse[]).map(toSmartMoneyEntry);
-        setData(entries);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [sortBy, limit, view]);
-
-  return { data, loading, error };
+  return {
+    data: data ?? null,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }

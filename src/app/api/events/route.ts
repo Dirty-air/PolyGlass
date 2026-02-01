@@ -8,6 +8,15 @@
 import { NextResponse } from "next/server";
 import { getEventsWithStats, getEventsWithSmartMoneyStats } from "@/db";
 
+/** 为响应添加缓存头 */
+function withCacheHeaders(response: NextResponse): NextResponse {
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=120, stale-while-revalidate=600"
+  );
+  return response;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const includeSmartMoney = searchParams.get("smart_money") === "true";
@@ -15,10 +24,10 @@ export async function GET(request: Request) {
   // 如果需要 Smart Money 统计，使用新函数
   if (includeSmartMoney) {
     const events = await getEventsWithSmartMoneyStats();
-    return NextResponse.json({ data: events });
+    return withCacheHeaders(NextResponse.json({ data: events }));
   }
 
   // 默认返回普通统计
   const events = await getEventsWithStats();
-  return NextResponse.json({ data: events });
+  return withCacheHeaders(NextResponse.json({ data: events }));
 }
