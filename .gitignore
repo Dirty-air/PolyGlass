@@ -61,4 +61,8 @@ next-env.d.ts
 
 # playwright
 .playwright-mcp.playwright-mcp/
+
 data/markets-cache.json
+
+# CLAUDE.md
+CLAUDE.md
