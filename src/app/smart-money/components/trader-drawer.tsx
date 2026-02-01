@@ -166,10 +166,10 @@ export function TraderDrawer({ address, onClose }: TraderDrawerProps) {
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-amber-200">Smart Score</span>
-                <span className="text-2xl font-bold text-amber-400">{(data.score * 100).toFixed(0)}</span>
+                <span className="text-2xl font-bold text-amber-400">{data.score.toFixed(0)}</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-amber-500/20">
-                <div className="h-full rounded-full bg-amber-400" style={{ width: `${data.score * 100}%` }} />
+                <div className="h-full rounded-full bg-amber-400" style={{ width: `${data.score}%` }} />
               </div>
             </div>
 
