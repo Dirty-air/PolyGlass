@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { QueryProvider } from "./components/query-provider";
+import { WalletProvider } from "./components/wallet-provider";
 import "./globals.css";
 
 const sans = Space_Grotesk({
@@ -30,7 +31,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${sans.variable} ${mono.variable} antialiased`}>
         <QueryProvider>
-          {children}
+          <WalletProvider>
+            {children}
+          </WalletProvider>
         </QueryProvider>
       </body>
     </html>

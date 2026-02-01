@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { Sparkles, WalletMinimal, Menu } from "lucide-react";
+import { Sparkles, WalletMinimal, Menu, ChevronDown } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 interface NavItem {
   label: string;
@@ -42,10 +45,44 @@ export function Header() {
       </nav>
 
       <div className="flex items-center gap-3">
-        <button className="hidden items-center gap-2 rounded-full border border-teal-200/40 bg-gradient-to-r from-teal-400/20 to-indigo-500/30 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_40px_rgba(109,243,231,0.25)] transition hover:scale-[1.01] md:flex">
-          <WalletMinimal className="h-4 w-4" />
-          Connect
-        </button>
+        <ConnectButton.Custom>
+          {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }) => {
+            const connected = mounted && account && chain;
+            return (
+              <div className="hidden md:flex items-center gap-2">
+                {!connected ? (
+                  <button
+                    onClick={openConnectModal}
+                    className="flex items-center gap-2 rounded-full border border-teal-200/40 bg-gradient-to-r from-teal-400/20 to-indigo-500/30 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_40px_rgba(109,243,231,0.25)] transition hover:scale-[1.01]"
+                  >
+                    <WalletMinimal className="h-4 w-4" />
+                    Connect
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={openChainModal}
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/10"
+                    >
+                      {chain.iconUrl && (
+                        <img src={chain.iconUrl} alt={chain.name ?? ""} className="h-4 w-4 rounded-full" />
+                      )}
+                      {chain.name}
+                    </button>
+                    <button
+                      onClick={openAccountModal}
+                      className="flex items-center gap-2 rounded-full border border-teal-200/40 bg-gradient-to-r from-teal-400/20 to-indigo-500/30 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_40px_rgba(109,243,231,0.25)] transition hover:scale-[1.01]"
+                    >
+                      <WalletMinimal className="h-4 w-4" />
+                      {account.displayName}
+                      <ChevronDown className="h-3 w-3 text-white/60" />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          }}
+        </ConnectButton.Custom>
         <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white lg:hidden">
           <Menu className="h-5 w-5" />
         </button>
